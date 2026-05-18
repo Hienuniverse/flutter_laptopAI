@@ -11,10 +11,13 @@ class AppRoutes {
   static const String benchmark = '/benchmark';
   static const String chatAi = '/chat-ai';
   static const String profile = '/profile';
+
+  // Admin routes
   static const String adminDashboard = '/admin/dashboard';
   static const String adminProducts = '/admin/products';
   static const String adminCategories = '/admin/categories';
   static const String adminOrders = '/admin/orders';
+  static const String adminReviews = '/admin/reviews';
   static const String adminAnalytics = '/admin/analytics';
   static const String adminSettings = '/admin/settings';
 }
