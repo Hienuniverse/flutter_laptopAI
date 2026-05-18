@@ -13,4 +13,9 @@ class AdminCategoryController extends ChangeNotifier {
     errorMessage = message;
     notifyListeners();
   }
+
+  void clearError() {
+    errorMessage = null;
+    notifyListeners();
+  }
 }

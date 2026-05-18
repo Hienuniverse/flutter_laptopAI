@@ -5,6 +5,7 @@ import '../features/admin/views/dashboard_screen.dart';
 import '../features/admin/views/manage_categories_screen.dart';
 import '../features/admin/views/manage_orders_screen.dart';
 import '../features/admin/views/manage_products_screen.dart';
+import '../features/admin/views/manage_reviews_screen.dart';
 import '../features/auth/views/login_screen.dart';
 import '../features/auth/views/register_screen.dart';
 import '../features/benchmark/views/benchmark_screen.dart';
@@ -21,21 +22,22 @@ class AppPages {
   AppPages._();
 
   static Map<String, WidgetBuilder> get routes => {
-        AppRoutes.login: (_) => const LoginScreen(),
-        AppRoutes.register: (_) => const RegisterScreen(),
-        AppRoutes.home: (_) => const HomeScreen(),
-        AppRoutes.products: (_) => const ProductListScreen(),
-        AppRoutes.productDetail: (_) => const ProductDetailScreen(),
-        AppRoutes.cart: (_) => const CartScreen(),
-        AppRoutes.orders: (_) => const OrderHistoryScreen(),
-        AppRoutes.benchmark: (_) => const BenchmarkScreen(),
-        AppRoutes.chatAi: (_) => const ChatAiScreen(),
-        AppRoutes.profile: (_) => const ProfileScreen(),
-        AppRoutes.adminDashboard: (_) => const DashboardScreen(),
-        AppRoutes.adminProducts: (_) => const ManageProductsScreen(),
-        AppRoutes.adminCategories: (_) => const ManageCategoriesScreen(),
-        AppRoutes.adminOrders: (_) => const ManageOrdersScreen(),
-        AppRoutes.adminAnalytics: (_) => const AnalyticsBenchmarkScreen(),
-        AppRoutes.adminSettings: (_) => const AdminSettingsScreen(),
-      };
+    AppRoutes.login: (_) => const LoginScreen(),
+    AppRoutes.register: (_) => const RegisterScreen(),
+    AppRoutes.home: (_) => const HomeScreen(),
+    AppRoutes.products: (_) => const ProductListScreen(),
+    AppRoutes.productDetail: (_) => const ProductDetailScreen(),
+    AppRoutes.cart: (_) => const CartScreen(),
+    AppRoutes.orders: (_) => const OrderHistoryScreen(),
+    AppRoutes.benchmark: (_) => const BenchmarkScreen(),
+    AppRoutes.chatAi: (_) => const ChatAiScreen(),
+    AppRoutes.profile: (_) => const ProfileScreen(),
+    AppRoutes.adminDashboard: (_) => const DashboardScreen(),
+    AppRoutes.adminProducts: (_) => const ManageProductsScreen(),
+    AppRoutes.adminCategories: (_) => const ManageCategoriesScreen(),
+    AppRoutes.adminOrders: (_) => const ManageOrdersScreen(),
+    AppRoutes.adminReviews: (_) => const ManageReviewsScreen(),
+    AppRoutes.adminAnalytics: (_) => const AnalyticsBenchmarkScreen(),
+    AppRoutes.adminSettings: (_) => const AdminSettingsScreen(),
+  };
 }
