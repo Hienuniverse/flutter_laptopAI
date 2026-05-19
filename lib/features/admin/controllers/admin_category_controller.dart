@@ -1,21 +1,17 @@
-import 'package:flutter/foundation.dart';
-
-class AdminCategoryController extends ChangeNotifier {
-  bool isLoading = false;
-  String? errorMessage;
-
-  void setLoading(bool value) {
-    isLoading = value;
-    notifyListeners();
+class AdminCategoryController {
+  void loadCategories() {
+    // TODO: Load categories from API
   }
 
-  void setError(String? message) {
-    errorMessage = message;
-    notifyListeners();
+  void createCategory() {
+    // TODO: Create category
   }
 
-  void clearError() {
-    errorMessage = null;
-    notifyListeners();
+  void updateCategory() {
+    // TODO: Update category
+  }
+
+  void deleteCategory() {
+    // TODO: Delete category
   }
 }

@@ -14,9 +14,9 @@ class ApiClient {
   Uri _uri(String path) => Uri.parse('${ApiConstants.baseUrl}$path');
 
   Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        if (_token != null) 'Authorization': 'Bearer $_token',
-      };
+    'Content-Type': 'application/json',
+    if (_token != null) 'Authorization': 'Bearer $_token',
+  };
 
   Future<dynamic> get(String path) async {
     final response = await _client.get(_uri(path), headers: _headers);
@@ -50,7 +50,9 @@ class ApiClient {
     final body = response.body.isEmpty ? null : jsonDecode(response.body);
     if (response.statusCode >= 200 && response.statusCode < 300) return body;
     throw ApiException(
-      body is Map && body['message'] != null ? body['message'].toString() : 'Có lỗi xảy ra khi gọi API',
+      body is Map && body['message'] != null
+          ? body['message'].toString()
+          : 'Có lỗi xảy ra khi gọi API',
       statusCode: response.statusCode,
     );
   }

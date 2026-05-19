@@ -5,7 +5,7 @@ class CategoryModel {
   const CategoryModel({required this.id, required this.name});
 
   factory CategoryModel.fromJson(Map<String, dynamic> json) => CategoryModel(
-        id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
-        name: json['name']?.toString() ?? '',
-      );
+    id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+    name: json['name']?.toString() ?? '',
+  );
 }

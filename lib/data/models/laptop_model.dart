@@ -22,14 +22,14 @@ class LaptopModel {
   });
 
   factory LaptopModel.fromJson(Map<String, dynamic> json) => LaptopModel(
-        id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
-        name: json['name']?.toString() ?? '',
-        brand: json['brand']?.toString() ?? '',
-        cpu: json['cpu']?.toString() ?? '',
-        ram: json['ram']?.toString() ?? '',
-        storage: json['storage']?.toString() ?? '',
-        price: double.tryParse(json['price']?.toString() ?? '0') ?? 0,
-        imageUrl: json['imageUrl']?.toString() ?? '',
-        aiScore: double.tryParse(json['aiScore']?.toString() ?? '0') ?? 0,
-      );
+    id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+    name: json['name']?.toString() ?? '',
+    brand: json['brand']?.toString() ?? '',
+    cpu: json['cpu']?.toString() ?? '',
+    ram: json['ram']?.toString() ?? '',
+    storage: json['storage']?.toString() ?? '',
+    price: double.tryParse(json['price']?.toString() ?? '0') ?? 0,
+    imageUrl: json['imageUrl']?.toString() ?? '',
+    aiScore: double.tryParse(json['aiScore']?.toString() ?? '0') ?? 0,
+  );
 }

@@ -1,21 +1,17 @@
-import 'package:flutter/foundation.dart';
-
-class AdminProductController extends ChangeNotifier {
-  bool isLoading = false;
-  String? errorMessage;
-
-  void setLoading(bool value) {
-    isLoading = value;
-    notifyListeners();
+class AdminProductController {
+  void loadProducts() {
+    // TODO: Load product list from API
   }
 
-  void setError(String? message) {
-    errorMessage = message;
-    notifyListeners();
+  void createProduct() {
+    // TODO: Create product
   }
 
-  void clearError() {
-    errorMessage = null;
-    notifyListeners();
+  void updateProduct() {
+    // TODO: Update product
+  }
+
+  void deleteProduct() {
+    // TODO: Delete product
   }
 }

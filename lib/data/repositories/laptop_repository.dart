@@ -8,6 +8,8 @@ class LaptopRepository {
   Future<List<LaptopModel>> getLaptops() async {
     final data = await _service.getLaptops();
     final list = data is List ? data : data['data'] as List? ?? [];
-    return list.map((item) => LaptopModel.fromJson(Map<String, dynamic>.from(item))).toList();
+    return list
+        .map((item) => LaptopModel.fromJson(Map<String, dynamic>.from(item)))
+        .toList();
   }
 }

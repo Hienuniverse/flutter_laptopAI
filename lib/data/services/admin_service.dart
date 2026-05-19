@@ -1,13 +1,22 @@
-import '../../core/constants/api_constants.dart';
-import '../../core/network/api_client.dart';
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+
+import '../models/dashboard_stats_model.dart';
 
 class AdminService {
-  AdminService(this._apiClient);
+  static const String baseUrl = 'http://localhost:5000/api';
 
-  final ApiClient _apiClient;
+  Future<DashboardStatsModel> getDashboardStats() async {
+    final uri = Uri.parse('$baseUrl/admin/dashboard');
 
-  Future<dynamic> getDashboardStats() => _apiClient.get(ApiConstants.adminDashboard);
-  Future<dynamic> createProduct(Map<String, dynamic> data) => _apiClient.post(ApiConstants.laptops, body: data);
-  Future<dynamic> updateProduct(String id, Map<String, dynamic> data) => _apiClient.put('${ApiConstants.laptops}/$id', body: data);
-  Future<dynamic> deleteProduct(String id) => _apiClient.delete('${ApiConstants.laptops}/$id');
+    final response = await http.get(uri);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return DashboardStatsModel.fromJson(data);
+    }
+
+    throw Exception('Không thể tải dữ liệu dashboard');
+  }
 }

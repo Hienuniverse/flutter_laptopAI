@@ -7,5 +7,6 @@ class LaptopService {
   final ApiClient _apiClient;
 
   Future<dynamic> getLaptops() => _apiClient.get(ApiConstants.laptops);
-  Future<dynamic> getLaptopById(String id) => _apiClient.get('${ApiConstants.laptops}/$id');
+  Future<dynamic> getLaptopById(String id) =>
+      _apiClient.get('${ApiConstants.laptops}/$id');
 }
