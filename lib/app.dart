@@ -13,7 +13,7 @@ class LaptopAIApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      initialRoute: AppRoutes.login,
+      initialRoute: AppRoutes.home,
       routes: AppPages.routes,
     );
   }

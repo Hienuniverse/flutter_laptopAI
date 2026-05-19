@@ -12,6 +12,7 @@ class LaptopModel {
   final String screen;
   final String description;
   final int stock;
+  final int aiScore; // 🔥 THÊM 1: Khai báo biến aiScore
 
   LaptopModel({
     required this.id,
@@ -27,26 +28,26 @@ class LaptopModel {
     required this.screen,
     required this.description,
     required this.stock,
+    required this.aiScore, // 🔥 THÊM 2: Thêm vào Constructor bắt buộc
   });
 
   factory LaptopModel.fromJson(Map<String, dynamic> json) {
     return LaptopModel(
       id: _toInt(json['id'] ?? json['MaLaptop'] ?? json['MaSP']),
       name: (json['name'] ?? json['TenLaptop'] ?? json['TenSP'] ?? '').toString(),
-      brand: (json['brand'] ?? json['ThuongHieu'] ?? json['Hang'] ?? '')
-          .toString(),
-      category: (json['category'] ?? json['DanhMuc'] ?? json['TenDanhMuc'] ?? '')
-          .toString(),
+      brand: (json['brand'] ?? json['ThuongHieu'] ?? json['Hang'] ?? '').toString(),
+      category: (json['category'] ?? json['DanhMuc'] ?? json['TenDanhMuc'] ?? '').toString(),
       image: (json['image'] ?? json['HinhAnh'] ?? json['Anh'] ?? '').toString(),
       price: _toDouble(json['price'] ?? json['Gia'] ?? json['DonGia']),
       cpu: (json['cpu'] ?? json['CPU'] ?? '').toString(),
       ram: (json['ram'] ?? json['RAM'] ?? '').toString(),
-      storage: (json['storage'] ?? json['SSD'] ?? json['BoNho'] ?? '')
-          .toString(),
+      storage: (json['storage'] ?? json['SSD'] ?? json['BoNho'] ?? '').toString(),
       gpu: (json['gpu'] ?? json['GPU'] ?? '').toString(),
       screen: (json['screen'] ?? json['ManHinh'] ?? '').toString(),
       description: (json['description'] ?? json['MoTa'] ?? '').toString(),
       stock: _toInt(json['stock'] ?? json['SoLuong'] ?? json['TonKho']),
+      // 🔥 THÊM 3: Map dữ liệu từ backend (Hỗ trợ cả trường hợp viết hoa viết thường từ SQL trả về)
+      aiScore: _toInt(json['aiScore'] ?? json['AIScore'] ?? json['diemAI'] ?? 90),
     );
   }
 
@@ -65,6 +66,7 @@ class LaptopModel {
       'screen': screen,
       'description': description,
       'stock': stock,
+      'aiScore': aiScore, // 🔥 THÊM 4: Thêm vào hàm xuất chuỗi JSON
     };
   }
 
