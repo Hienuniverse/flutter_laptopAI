@@ -1,13 +1,30 @@
+import '../models/category_model.dart';
 import '../models/laptop_model.dart';
 import '../services/laptop_service.dart';
 
 class LaptopRepository {
-  LaptopRepository(this._service);
-  final LaptopService _service;
+  final LaptopService _laptopService;
 
-  Future<List<LaptopModel>> getLaptops() async {
-    final data = await _service.getLaptops();
-    final list = data is List ? data : data['data'] as List? ?? [];
-    return list.map((item) => LaptopModel.fromJson(Map<String, dynamic>.from(item))).toList();
+  LaptopRepository({LaptopService? laptopService})
+      : _laptopService = laptopService ?? LaptopService();
+
+  Future<List<LaptopModel>> getLaptops() {
+    return _laptopService.getLaptops();
+  }
+
+  Future<LaptopModel> getLaptopById(int id) {
+    return _laptopService.getLaptopById(id);
+  }
+
+  Future<List<CategoryModel>> getCategories() {
+    return _laptopService.getCategories();
+  }
+
+  Future<List<LaptopModel>> searchLaptops(String keyword) {
+    if (keyword.trim().isEmpty) {
+      return getLaptops();
+    }
+
+    return _laptopService.searchLaptops(keyword.trim());
   }
 }
