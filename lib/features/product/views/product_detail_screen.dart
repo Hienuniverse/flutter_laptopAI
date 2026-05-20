@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../data/models/laptop_model.dart';
+import '../../cart/controllers/cart_controller.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   final LaptopModel laptop;
@@ -39,6 +40,8 @@ class ProductDetailScreen extends StatelessWidget {
         ),
         child: ElevatedButton.icon(
           onPressed: () {
+            CartController.instance.addToCart(laptop);
+
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Đã thêm ${laptop.name} vào giỏ hàng'),
