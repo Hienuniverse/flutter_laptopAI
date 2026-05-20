@@ -7,8 +7,6 @@ class AdminRepository {
 
   Future<DashboardStatsModel> getDashboardStats() async {
     final data = await _service.getDashboardStats();
-    return DashboardStatsModel.fromJson(
-      Map<String, dynamic>.from(data['data'] ?? data),
-    );
+    return DashboardStatsModel.fromJson(Map<String, dynamic>.from(data['data'] ?? data));
   }
 }

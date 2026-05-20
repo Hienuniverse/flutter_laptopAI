@@ -1,9 +1,21 @@
-class AdminOrderController {
-  void loadOrders() {
-    // TODO: Load orders from API
+import 'package:flutter/foundation.dart';
+
+class AdminOrderController extends ChangeNotifier {
+  bool isLoading = false;
+  String? errorMessage;
+
+  void setLoading(bool value) {
+    isLoading = value;
+    notifyListeners();
   }
 
-  void updateOrderStatus() {
-    // TODO: Update order status
+  void setError(String? message) {
+    errorMessage = message;
+    notifyListeners();
+  }
+
+  void clearError() {
+    errorMessage = null;
+    notifyListeners();
   }
 }

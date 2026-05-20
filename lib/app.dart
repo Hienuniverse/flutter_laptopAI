@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-
-import 'routes/app_pages.dart';
+import 'core/theme/app_theme.dart';
 import 'routes/app_routes.dart';
+import 'routes/app_pages.dart';
 
 class LaptopAIApp extends StatelessWidget {
   const LaptopAIApp({super.key});
@@ -11,7 +11,9 @@ class LaptopAIApp extends StatelessWidget {
     return MaterialApp(
       title: 'LaptopAI',
       debugShowCheckedModeBanner: false,
-      initialRoute: AppRoutes.adminDashboard,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      initialRoute: AppRoutes.home,
       routes: AppPages.routes,
     );
   }

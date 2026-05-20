@@ -7,16 +7,10 @@ class AuthService {
   final ApiClient _apiClient;
 
   Future<dynamic> login(String email, String password) {
-    return _apiClient.post(
-      ApiConstants.login,
-      body: {'email': email, 'password': password},
-    );
+    return _apiClient.post(ApiConstants.login, body: {'email': email, 'password': password});
   }
 
   Future<dynamic> register(String name, String email, String password) {
-    return _apiClient.post(
-      ApiConstants.register,
-      body: {'name': name, 'email': email, 'password': password},
-    );
+    return _apiClient.post(ApiConstants.register, body: {'name': name, 'email': email, 'password': password});
   }
 }

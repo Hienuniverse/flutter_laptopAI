@@ -6,7 +6,7 @@ class AppTheme {
     return ThemeData.dark().copyWith(
       scaffoldBackgroundColor: AppColors.background,
       primaryColor: AppColors.neonCyan,
-
+      
       // Cấu hình Appbar trong suốt chuẩn hiện đại
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,

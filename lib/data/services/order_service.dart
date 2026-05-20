@@ -7,6 +7,5 @@ class OrderService {
   final ApiClient _apiClient;
 
   Future<dynamic> getOrders() => _apiClient.get(ApiConstants.orders);
-  Future<dynamic> createOrder(Map<String, dynamic> data) =>
-      _apiClient.post(ApiConstants.orders, body: data);
+  Future<dynamic> createOrder(Map<String, dynamic> data) => _apiClient.post(ApiConstants.orders, body: data);
 }
