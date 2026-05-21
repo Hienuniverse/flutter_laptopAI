@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../data/models/laptop_model.dart';
+import '../../../data/models/laptop_model.dart';
 
 class ProductCard extends StatelessWidget {
   final LaptopModel laptop;
@@ -123,7 +123,8 @@ class ProductCard extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  'AI Score: ${laptop.aiScore}',
+                  // 🛠️ ĐÃ CẬP NHẬT: Xử lý hiển thị điểm số thông minh, nếu bằng 0 hoặc chưa có thì hiện 'N/A' hoặc '--'
+                  'AI Score: ${laptop.aiScore > 0 ? laptop.aiScore : '--'}',
                   style: const TextStyle(
                     color: Color(0xFF5CE1E6),
                     fontSize: 9,

@@ -56,6 +56,9 @@ class CartScreen extends StatelessWidget {
                     final item = cartController.items[index];
                     final laptop = item.laptop;
 
+                    // 🛠️ KIỂM TRA AN TOÀN: Nếu dữ liệu sản phẩm bị lỗi null, bỏ qua không hiển thị dòng đó
+                    if (laptop == null) return const SizedBox.shrink();
+
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
                       decoration: BoxDecoration(
@@ -114,8 +117,9 @@ class CartScreen extends StatelessWidget {
                                       _quantityButton(
                                         icon: Icons.remove,
                                         onTap: () {
+                                          // 🛠️ ĐÃ SỬA: Thay laptop.id thành laptop.maSP ?? 0
                                           cartController
-                                              .decreaseQuantity(laptop.id);
+                                              .decreaseQuantity(laptop.maSP ?? 0);
                                         },
                                       ),
                                       Padding(
@@ -123,7 +127,7 @@ class CartScreen extends StatelessWidget {
                                           horizontal: 12,
                                         ),
                                         child: Text(
-                                          item.quantity.toString(),
+                                          item.soLuong.toString(), // 🛠️ ĐÃ SỬA: Đổi sang biến tiếng Việt soLuong
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 16,
@@ -134,14 +138,16 @@ class CartScreen extends StatelessWidget {
                                       _quantityButton(
                                         icon: Icons.add,
                                         onTap: () {
+                                          // 🛠️ ĐÃ SỬA: Thay laptop.id thành laptop.maSP ?? 0
                                           cartController
-                                              .increaseQuantity(laptop.id);
+                                              .increaseQuantity(laptop.maSP ?? 0);
                                         },
                                       ),
                                       const Spacer(),
                                       IconButton(
                                         onPressed: () {
-                                          cartController.removeItem(laptop.id);
+                                          // 🛠️ ĐÃ SỬA: Thay laptop.id thành laptop.maSP ?? 0
+                                          cartController.removeItem(laptop.maSP ?? 0);
                                         },
                                         icon: const Icon(
                                           Icons.delete_outline,

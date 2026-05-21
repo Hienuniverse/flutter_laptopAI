@@ -1,34 +1,28 @@
 class CategoryModel {
-  final int id;
-  final String name;
-  final String description;
+  final int? maDM;
+  final String tenDM;
+  final String? moTa;
+  final String? slug;
+  final String icon;
+  final String colorClass;
 
   CategoryModel({
-    required this.id,
-    required this.name,
-    required this.description,
+    this.maDM,
+    required this.tenDM,
+    this.moTa,
+    this.slug,
+    this.icon = 'FolderTree',
+    this.colorClass = 'cyan',
   });
 
   factory CategoryModel.fromJson(Map<String, dynamic> json) {
     return CategoryModel(
-      id: _toInt(json['id'] ?? json['MaDanhMuc'] ?? json['categoryId']),
-      name: (json['name'] ?? json['TenDanhMuc'] ?? json['categoryName'] ?? '')
-          .toString(),
-      description: (json['description'] ?? json['MoTa'] ?? '').toString(),
+      maDM: json['MaDM'] ?? json['maDM'],
+      tenDM: json['TenDM'] ?? json['tenDM'] ?? '',
+      moTa: json['MoTa'] ?? json['moTa'],
+      slug: json['Slug'] ?? json['slug'],
+      icon: json['Icon'] ?? json['icon'] ?? 'FolderTree',
+      colorClass: json['ColorClass'] ?? json['colorClass'] ?? 'cyan',
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'description': description,
-    };
-  }
-
-  static int _toInt(dynamic value) {
-    if (value == null) return 0;
-    if (value is int) return value;
-    return int.tryParse(value.toString()) ?? 0;
   }
 }

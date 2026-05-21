@@ -1,75 +1,127 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../models/user_model.dart';
 
 class AuthService {
-  UserModel? _currentUser;
+  final SupabaseClient _client = Supabase.instance.client;
 
-  UserModel? get currentUser => _currentUser;
-
+  // =========================
+  // ĐĂNG NHẬP
+  // =========================
   Future<UserModel> login({
     required String email,
     required String password,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      final response = await _client.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
 
-    if (email.isEmpty || password.isEmpty) {
-      throw Exception('Vui lòng nhập đầy đủ email và mật khẩu');
+      final user = response.user;
+
+      if (user == null) {
+        throw Exception('Đăng nhập thất bại');
+      }
+
+      return UserModel(
+        maTK: null,
+        hoTen:
+        user.userMetadata?['full_name'] ??
+            'Người dùng',
+        email: user.email ?? '',
+        soDienThoai:
+        user.userMetadata?['phone'] ?? '',
+        diaChi:
+        user.userMetadata?['address'] ?? '',
+        vaiTro:
+        user.userMetadata?['role'] ?? 'Customer',
+        trangThai: true,
+        hinhAnhDaiDien:
+        user.userMetadata?['avatar'],
+      );
+    } catch (e) {
+      throw Exception('Lỗi đăng nhập: $e');
     }
-
-    _currentUser = UserModel(
-      id: 1,
-      fullName: 'Nguyễn Văn User',
-      email: email,
-      phone: '0900000000',
-      role: 'Customer',
-      avatar: '',
-      address: 'Bình Dương',
-    );
-
-    return _currentUser!;
   }
 
+  // =========================
+  // ĐĂNG KÝ
+  // =========================
   Future<UserModel> register({
     required String fullName,
     required String email,
     required String password,
     required String phone,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      final response = await _client.auth.signUp(
+        email: email,
+        password: password,
+        data: {
+          'full_name': fullName,
+          'phone': phone,
+          'role': 'Customer',
+        },
+      );
 
-    if (fullName.isEmpty || email.isEmpty || password.isEmpty) {
-      throw Exception('Vui lòng nhập đầy đủ thông tin đăng ký');
+      final user = response.user;
+
+      if (user == null) {
+        throw Exception('Đăng ký thất bại');
+      }
+
+      return UserModel(
+        maTK: null,
+        hoTen: fullName,
+        email: email,
+        soDienThoai: phone,
+        diaChi: '',
+        vaiTro: 'Customer',
+        trangThai: true,
+        hinhAnhDaiDien: null,
+      );
+    } catch (e) {
+      throw Exception('Lỗi đăng ký: $e');
     }
-
-    _currentUser = UserModel(
-      id: DateTime.now().millisecondsSinceEpoch,
-      fullName: fullName,
-      email: email,
-      phone: phone,
-      role: 'Customer',
-      avatar: '',
-      address: '',
-    );
-
-    return _currentUser!;
   }
 
+  // =========================
+  // LẤY USER HIỆN TẠI
+  // =========================
   Future<UserModel?> getCurrentUser() async {
-    await Future.delayed(const Duration(milliseconds: 300));
+    try {
+      final user = _client.auth.currentUser;
 
-    return _currentUser ??
-        UserModel(
-          id: 1,
-          fullName: 'Khách hàng Laptop AI',
-          email: 'user@gmail.com',
-          phone: '0900000000',
-          role: 'Customer',
-          avatar: '',
-          address: 'Bình Dương',
-        );
+      if (user == null) {
+        return null;
+      }
+
+      return UserModel(
+        maTK: null,
+        hoTen:
+        user.userMetadata?['full_name'] ??
+            'Người dùng',
+        email: user.email ?? '',
+        soDienThoai:
+        user.userMetadata?['phone'] ?? '',
+        diaChi:
+        user.userMetadata?['address'] ?? '',
+        vaiTro:
+        user.userMetadata?['role'] ?? 'Customer',
+        trangThai: true,
+        hinhAnhDaiDien:
+        user.userMetadata?['avatar'],
+      );
+    } catch (e) {
+      return null;
+    }
   }
 
+  // =========================
+  // ĐĂNG XUẤT
+  // =========================
   Future<void> logout() async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    _currentUser = null;
+    await _client.auth.signOut();
   }
 }

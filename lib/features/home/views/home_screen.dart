@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../routes/app_routes.dart';
-import '../../../../data/models/laptop_model.dart';
+import '../controllers/home_controller.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,44 +11,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final TextEditingController _searchController = TextEditingController();
-
-  final List<LaptopModel> _mockLaptops = <LaptopModel>[
-    LaptopModel(
-      id: 1,
-      name: "Laptop Asus ROG Strix G16 G614JV",
-      price: 34990000.0,
-      image:
-      "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=500",
-      brand: "Asus",
-      category: "Gaming",
-      cpu: "Intel Core i7 13650HX",
-      gpu: "NVIDIA RTX 4060",
-      ram: "16GB",
-      storage: "512GB SSD",
-      screen: "16 inch FHD+",
-      description: "Laptop gaming hiệu năng AI cao",
-      stock: 10,
-      aiScore: 98,
-    ),
-    LaptopModel(
-      id: 2,
-      name: "Laptop MSI Cyborg 15 A12VE",
-      price: 18490000.0,
-      image:
-      "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=500",
-      brand: "MSI",
-      category: "Gaming",
-      cpu: "Intel Core i5 12450H",
-      gpu: "NVIDIA RTX 4050",
-      ram: "8GB",
-      storage: "512GB SSD",
-      screen: "15.6 inch FHD",
-      description: "Laptop cấu hình tốt giá rẻ",
-      stock: 5,
-      aiScore: 96,
-    ),
-  ];
+  final HomeController _homeController = HomeController();
 
   String _formatPrice(double price) {
     return '${price.toStringAsFixed(0).replaceAllMapped(
@@ -58,9 +21,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    // Kích hoạt kéo dữ liệu thật từ SQL Server thông qua API Server
+    _homeController.fetchFeaturedLaptops();
   }
 
   @override
@@ -76,6 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // --- THANH TIÊU ĐỀ TRÊN CÙNG (HEADER BAR) ---
               Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: isWeb ? screenWidth * 0.1 : 16,
@@ -126,6 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
+              // --- ĐOẠN VĂN TIÊU ĐỀ CHÍNH (TITLE SECTION) ---
               Padding(
                 padding: EdgeInsets.only(
                   left: isWeb ? screenWidth * 0.1 : 16,
@@ -170,144 +136,185 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 16),
 
+              // --- LƯỚI HIỂN THỊ LAPTOP ĐỘNG TỪ SQL SERVER ---
               Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: isWeb ? screenWidth * 0.1 : 16,
                 ),
-                child: GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: isWeb ? 4 : 2,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    childAspectRatio: isWeb ? 0.75 : 0.64,
-                  ),
-                  itemCount: _mockLaptops.length,
-                  itemBuilder: (context, index) {
-                    final laptop = _mockLaptops[index];
-
-                    return GestureDetector(
-                      onTap: () {
-                        Navigator.pushNamed(
-                          context,
-                          AppRoutes.productDetail,
-                          arguments: laptop,
-                        );
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0B1528).withAlpha(180),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: Colors.white.withAlpha(20),
+                child: AnimatedBuilder(
+                  animation: _homeController,
+                  builder: (context, child) {
+                    // 1. Nếu hệ thống đang đợi phản hồi từ Backend
+                    if (_homeController.isLoading) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 40),
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF5CE1E6),
                           ),
                         ),
-                        child: Stack(
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                      );
+                    }
+
+                    // 2. Nếu đường truyền API hoặc SQL phát sinh lỗi
+                    if (_homeController.errorMessage.isNotEmpty) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 40),
+                          child: Text(
+                            _homeController.errorMessage,
+                            style: const TextStyle(color: Colors.redAccent, fontSize: 14),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      );
+                    }
+
+                    // 3. Nếu bảng SanPham dưới cơ sở dữ liệu trống rỗng
+                    final realLaptops = _homeController.laptops;
+                    if (realLaptops.isEmpty) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 40),
+                          child: Text(
+                            "Không có sản phẩm nào để hiển thị",
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                        ),
+                      );
+                    }
+
+                    // 4. Đổ dữ liệu thật lên giao diện lưới
+                    return GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: isWeb ? 4 : 2,
+                        mainAxisSpacing: 16,
+                        crossAxisSpacing: 16,
+                        childAspectRatio: isWeb ? 0.75 : 0.64,
+                      ),
+                      itemCount: realLaptops.length,
+                      itemBuilder: (context, index) {
+                        final laptop = realLaptops[index];
+
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.pushNamed(
+                              context,
+                              AppRoutes.productDetail,
+                              arguments: laptop,
+                            );
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0B1528).withAlpha(180),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Colors.white.withAlpha(20),
+                              ),
+                            ),
+                            child: Stack(
                               children: [
-                                Expanded(
-                                  child: Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withAlpha(5),
-                                      borderRadius:
-                                      const BorderRadius.vertical(
-                                        top: Radius.circular(16),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    PlatformViewLink(
+                                      child: Expanded(
+                                        child: Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withAlpha(5),
+                                            borderRadius:
+                                            const BorderRadius.vertical(
+                                              top: Radius.circular(16),
+                                            ),
+                                          ),
+                                          child: laptop.image.isNotEmpty
+                                              ? Image.network(
+                                            laptop.image,
+                                            fit: BoxFit.contain,
+                                            errorBuilder:
+                                                (context, error, stackTrace) {
+                                              return _buildDefaultLaptopIcon();
+                                            },
+                                          )
+                                              : _buildDefaultLaptopIcon(),
+                                        ),
                                       ),
                                     ),
-                                    child: laptop.image.isNotEmpty
-                                        ? Image.network(
-                                      laptop.image,
-                                      fit: BoxFit.contain,
-                                      errorBuilder:
-                                          (context, error, stackTrace) {
-                                        return const Icon(
-                                          Icons.laptop,
-                                          color: Colors.grey,
-                                          size: 40,
-                                        );
-                                      },
-                                    )
-                                        : const Icon(
-                                      Icons.laptop,
-                                      color: Colors.grey,
-                                      size: 40,
+                                    Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            laptop.name,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            "⚡ ${(laptop.gpu != null && laptop.gpu!.isNotEmpty) ? laptop.gpu : 'Đang cập nhật'}",
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              color: Colors.white.withAlpha(100),
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            _formatPrice(laptop.price),
+                                            style: const TextStyle(
+                                              color: Color(0xFF5CE1E6),
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w900,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 ),
-                                Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        laptop.name,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                Positioned(
+                                  top: 8,
+                                  right: 8,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF102A45),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: const Color(0xFF00A3E0)
+                                            .withAlpha(150),
                                       ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        "⚡ ${laptop.gpu}",
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          color: Colors.white.withAlpha(100),
-                                          fontSize: 11,
-                                        ),
+                                    ),
+                                    child: Text(
+                                      "AI Score: ${laptop.aiScore > 0 ? laptop.aiScore : '--'}",
+                                      style: const TextStyle(
+                                        color: Color(0xFF5CE1E6),
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        _formatPrice(laptop.price),
-                                        style: const TextStyle(
-                                          color: Color(0xFF5CE1E6),
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                      ),
-                                    ],
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF102A45),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: const Color(0xFF00A3E0)
-                                        .withAlpha(150),
-                                  ),
-                                ),
-                                child: Text(
-                                  "AI Score: ${laptop.aiScore}",
-                                  style: const TextStyle(
-                                    color: Color(0xFF5CE1E6),
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                          ),
+                        );
+                      },
                     );
                   },
                 ),
@@ -335,4 +342,19 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  Widget _buildDefaultLaptopIcon() {
+    return const Icon(
+      Icons.laptop,
+      color: Colors.grey,
+      size: 40,
+    );
+  }
+}
+
+class PlatformViewLink extends StatelessWidget {
+  final Widget child;
+  const PlatformViewLink({super.key, required this.child});
+  @override
+  Widget build(BuildContext context) => child;
 }
