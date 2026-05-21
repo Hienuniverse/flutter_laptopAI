@@ -1,58 +1,78 @@
-class OrderDetailModel {
-  final int? maCTDH;
-  final int maSP;
-  final int soLuong;
-  final double giaBan;
-
-  OrderDetailModel({this.maCTDH, required this.maSP, required this.soLuong, required this.giaBan});
-
-  factory OrderDetailModel.fromJson(Map<String, dynamic> json) {
-    return OrderDetailModel(
-      maCTDH: json['MaCTDH'] ?? json['maCTDH'],
-      maSP: json['MaSP'] ?? json['maSP'] ?? 0,
-      soLuong: json['SoLuong'] ?? json['soLuong'] ?? 1,
-      giaBan: (json['GiaBan'] ?? json['giaBan'] ?? 0.0).toDouble(),
-    );
-  }
-}
+import 'order_detail_model.dart';
 
 class OrderModel {
   final int? maDH;
   final int? maTK;
+  final DateTime ngayDat;
   final double tongTien;
-  final String? phuongThucThanhToan;
+  final String phuongThucThanhToan;
   final String trangThai;
-  final double riskScoreAI;
-  final bool isSpam;
-  final bool daThanhToan;
+  final double riskScoreAi;
   final List<OrderDetailModel> chiTiet;
 
   OrderModel({
     this.maDH,
     this.maTK,
+    required this.ngayDat,
     required this.tongTien,
-    this.phuongThucThanhToan,
-    this.trangThai = 'Chờ xác nhận',
-    this.riskScoreAI = 0.0,
-    this.isSpam = false,
-    this.daThanhToan = false,
+    required this.phuongThucThanhToan,
+    required this.trangThai,
+    required this.riskScoreAi,
     this.chiTiet = const [],
   });
 
-  factory OrderModel.fromJson(Map<String, dynamic> json) {
-    var list = json['ChiTiet'] as List? ?? json['chiTiet'] as List? ?? [];
-    List<OrderDetailModel> listChiTiet = list.map((i) => OrderDetailModel.fromJson(i)).toList();
+  int get totalQuantity {
+    int total = 0;
 
+    for (final item in chiTiet) {
+      total += item.soLuong;
+    }
+
+    return total;
+  }
+
+  bool get isSpam {
+    return riskScoreAi >= 1.0;
+  }
+
+  bool get daThanhToan {
+    return trangThai.toLowerCase().contains('đã thanh toán') ||
+        trangThai.toLowerCase().contains('hoàn thành');
+  }
+
+  factory OrderModel.fromJson(Map<String, dynamic> json) {
     return OrderModel(
-      maDH: json['MaDH'] ?? json['maDH'],
-      maTK: json['MaTK'] ?? json['maTK'],
-      tongTien: (json['TongTien'] ?? json['tongTien'] ?? 0.0).toDouble(),
-      phuongThucThanhToan: json['PhuongThucThanhToan'] ?? json['phuongThucThanhToan'],
-      trangThai: json['TrangThai'] ?? json['trangThai'] ?? 'Chờ xác nhận',
-      riskScoreAI: (json['RiskScore_AI'] ?? json['riskScoreAI'] ?? 0.0).toDouble(),
-      isSpam: json['IsSpam'] == true || json['IsSpam'] == 1,
-      daThanhToan: json['DaThanhToan'] == true || json['DaThanhToan'] == 1,
-      chiTiet: listChiTiet,
+      maDH: json['madh'],
+      maTK: json['matk'],
+      ngayDat: DateTime.tryParse(json['ngaydat'].toString()) ?? DateTime.now(),
+      tongTien: _toDouble(json['tongtien']),
+      phuongThucThanhToan:
+      (json['phuongthucthanhtoan'] ?? 'Tiền mặt').toString(),
+      trangThai: (json['trangthai'] ?? 'Chờ xử lý').toString(),
+      riskScoreAi: _toDouble(json['riskscore_ai']),
+      chiTiet: json['chitietdonhang'] is List
+          ? (json['chitietdonhang'] as List)
+          .map((item) => OrderDetailModel.fromJson(item))
+          .toList()
+          : const [],
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'matk': maTK,
+      'ngaydat': ngayDat.toIso8601String(),
+      'tongtien': tongTien,
+      'phuongthucthanhtoan': phuongThucThanhToan,
+      'trangthai': trangThai,
+      'riskscore_ai': riskScoreAi,
+    };
+  }
+
+  static double _toDouble(dynamic value) {
+    if (value == null) return 0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    return double.tryParse(value.toString()) ?? 0;
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../data/models/cart_item_model.dart';
+import '../../../data/models/order_detail_model.dart';
 import '../../../data/models/order_model.dart';
 
 class OrderController extends ChangeNotifier {
@@ -20,37 +21,38 @@ class OrderController extends ChangeNotifier {
   }) {
     if (cartItems.isEmpty) return;
 
-    // 🛠️ ĐÃ SỬA: Chuyển đổi danh sách mặt hàng trong giỏ (CartItemModel)
-    // sang danh sách Chi tiết đơn hàng (OrderDetailModel) chuẩn cấu hình SQL
-    final List<OrderDetailModel> copiedItems = cartItems
-        .map(
-          (item) => OrderDetailModel(
-        maSP: item.maSP,
-        soLuong: item.soLuong,
-        giaBan: item.laptop?.giaBan ?? 0.0,
-      ),
-    )
-        .toList();
+    final List<OrderDetailModel> details = cartItems
+        .where((item) => item.laptop != null)
+        .map((item) {
+      final laptop = item.laptop!;
 
-    // 🛠️ ĐÃ SỬA: Khởi tạo OrderModel bằng các tham số tiếng Việt khớp cấu trúc DB
+      return OrderDetailModel(
+        maSP: laptop.maSP,
+        soLuong: item.quantity,
+        giaBan: laptop.giaBan,
+      );
+    }).toList();
+
+    if (details.isEmpty) return;
+
     final order = OrderModel(
-      maDH: DateTime.now().millisecondsSinceEpoch, // Dùng tạm Timestamp làm mã đơn hàng giả lập
+      maDH: DateTime.now().millisecondsSinceEpoch,
+      maTK: 1,
+      ngayDat: DateTime.now(),
       tongTien: totalPrice,
-      trangThai: 'Chờ xác nhận',
-      riskScoreAI: 0.0,
-      isSpam: false,
-      daThanhToan: false,
-      chiTiet: copiedItems,
+      phuongThucThanhToan: 'Tiền mặt',
+      trangThai: 'Chờ xử lý',
+      riskScoreAi: 0.0,
+      chiTiet: details,
     );
 
     _orders.insert(0, order);
     notifyListeners();
   }
 
-  // 🛠️ ĐÃ SỬA: Hàm tìm đơn hàng theo mã đơn, ép kiểu int sang chuỗi String để không lệch với UI cũ
-  OrderModel? getOrderById(String id) {
+  OrderModel? getOrderById(int maDH) {
     try {
-      return _orders.firstWhere((order) => (order.maDH ?? '').toString() == id);
+      return _orders.firstWhere((order) => order.maDH == maDH);
     } catch (_) {
       return null;
     }
