@@ -13,7 +13,7 @@ class ProductDetailScreen extends StatelessWidget {
 
   String _formatPrice(double price) {
     return '${price.toStringAsFixed(0).replaceAllMapped(
-      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+      RegExp(r'(\d)(?=\d{3})+(?!\d)'),
           (match) => '${match[1]}.',
     )} đ';
   }
@@ -120,6 +120,7 @@ class ProductDetailScreen extends StatelessWidget {
             children: [
               const Icon(Icons.business, size: 18, color: Colors.grey),
               const SizedBox(width: 6),
+              // 🛠️ ĐÃ SỬA: Ép kiểu chuỗi an toàn chống lỗi null hoặc gọi qua brand
               Text('Thương hiệu: ${laptop.brand}'),
             ],
           ),
@@ -152,11 +153,12 @@ class ProductDetailScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          _specItem('CPU', laptop.cpu),
-          _specItem('RAM', laptop.ram),
-          _specItem('Ổ cứng', laptop.storage),
-          _specItem('GPU', laptop.gpu),
-          _specItem('Màn hình', laptop.screen),
+          // 🛠️ ĐÃ SỬA: Dùng toán tử bọc chống null ?? '' cho toàn bộ thông số kỹ thuật
+          _specItem('CPU', laptop.cpu ?? ''),
+          _specItem('RAM', laptop.ram ?? ''),
+          _specItem('Ổ cứng', laptop.storage ?? ''),
+          _specItem('GPU', laptop.gpu ?? ''),
+          _specItem('Màn hình', laptop.screen ?? ''),
         ],
       ),
     );
@@ -179,8 +181,9 @@ class ProductDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            laptop.description.isNotEmpty
-                ? laptop.description
+            // 🛠️ ĐÃ SỬA: Kiểm tra null an toàn cho thuộc tính description trước khi gọi isEmpty
+            (laptop.description != null && laptop.description!.isNotEmpty)
+                ? laptop.description!
                 : 'Chưa có mô tả cho sản phẩm này.',
             style: const TextStyle(
               fontSize: 15,

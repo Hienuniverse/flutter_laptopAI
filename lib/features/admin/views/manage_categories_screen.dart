@@ -37,7 +37,8 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
   Widget build(BuildContext context) {
     return AdminLayout(
       title: 'Quản lý danh mục',
-      child: Padding(
+      // 🛠️ ĐÃ SỬA: Thay thế thuộc tính 'child:' thành 'body:' để khớp với cấu trúc AdminLayout của đồ án
+      body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
@@ -291,11 +292,11 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
   }
 
   Widget _buildInput(
-    TextEditingController controller,
-    String label, {
-    TextInputType keyboardType = TextInputType.text,
-    int maxLines = 1,
-  }) {
+      TextEditingController controller,
+      String label, {
+        TextInputType keyboardType = TextInputType.text,
+        int maxLines = 1,
+      }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextField(

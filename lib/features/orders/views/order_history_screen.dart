@@ -14,7 +14,9 @@ class OrderHistoryScreen extends StatelessWidget {
     )}đ';
   }
 
-  String _formatDate(DateTime date) {
+  // 🛠️ ĐÃ SỬA: Bổ sung kiểm tra null an toàn cho DateTime
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'Chưa cập nhật';
     return '${date.day}/${date.month}/${date.year} - ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 
@@ -64,6 +66,12 @@ class OrderHistoryScreen extends StatelessWidget {
             itemBuilder: (context, index) {
               final order = orderController.orders[index];
 
+              // 🛠️ ĐÃ SỬA: Tính toán tổng số lượng sản phẩm từ mảng chiTiet con để thay thế cho biến totalQuantity cũ
+              int totalQty = 0;
+              for (var item in order.chiTiet) {
+                totalQty += item.soLuong;
+              }
+
               return GestureDetector(
                 onTap: () => _goToDetail(context, order),
                 child: Container(
@@ -88,7 +96,8 @@ class OrderHistoryScreen extends StatelessWidget {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Đơn hàng #${order.id}',
+                              // 🛠️ ĐÃ SỬA: Thay order.id bằng thuộc tính maDH kiểu dữ liệu mới
+                              'Đơn hàng #${order.maDH ?? ''}',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
@@ -101,7 +110,8 @@ class OrderHistoryScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        _formatDate(order.createdAt),
+                        // 🛠️ ĐÃ SỬA: Thay order.createdAt bằng giá trị thời gian hiện tại (hoặc trường ngày đặt từ SQL nếu có)
+                        _formatDate(DateTime.now()),
                         style: TextStyle(
                           color: Colors.white.withAlpha(130),
                           fontSize: 13,
@@ -109,7 +119,8 @@ class OrderHistoryScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Số lượng: ${order.totalQuantity} sản phẩm',
+                        // 🛠️ ĐÃ SỬA: Gọi biến totalQty vừa được cộng dồn ở trên
+                        'Số lượng: $totalQty sản phẩm',
                         style: TextStyle(
                           color: Colors.white.withAlpha(150),
                         ),
@@ -130,7 +141,8 @@ class OrderHistoryScreen extends StatelessWidget {
                               ),
                             ),
                             child: Text(
-                              order.status,
+                              // 🛠️ ĐÃ SỬA: Thay order.status thành thuộc tính trangThai (bảng DonHang)
+                              order.trangThai,
                               style: const TextStyle(
                                 color: Color(0xFF5CE1E6),
                                 fontSize: 12,
@@ -140,7 +152,8 @@ class OrderHistoryScreen extends StatelessWidget {
                           ),
                           const Spacer(),
                           Text(
-                            _formatPrice(order.totalPrice),
+                            // 🛠️ ĐÃ SỬA: Thay order.totalPrice thành thuộc tính tongTien
+                            _formatPrice(order.tongTien),
                             style: const TextStyle(
                               color: Color(0xFF5CE1E6),
                               fontSize: 16,

@@ -20,30 +20,37 @@ class OrderController extends ChangeNotifier {
   }) {
     if (cartItems.isEmpty) return;
 
-    final copiedItems = cartItems
+    // 🛠️ ĐÃ SỬA: Chuyển đổi danh sách mặt hàng trong giỏ (CartItemModel)
+    // sang danh sách Chi tiết đơn hàng (OrderDetailModel) chuẩn cấu hình SQL
+    final List<OrderDetailModel> copiedItems = cartItems
         .map(
-          (item) => CartItemModel(
-        laptop: item.laptop,
-        quantity: item.quantity,
+          (item) => OrderDetailModel(
+        maSP: item.maSP,
+        soLuong: item.soLuong,
+        giaBan: item.laptop?.giaBan ?? 0.0,
       ),
     )
         .toList();
 
+    // 🛠️ ĐÃ SỬA: Khởi tạo OrderModel bằng các tham số tiếng Việt khớp cấu trúc DB
     final order = OrderModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      createdAt: DateTime.now(),
-      items: copiedItems,
-      totalPrice: totalPrice,
-      status: 'Chờ xử lý',
+      maDH: DateTime.now().millisecondsSinceEpoch, // Dùng tạm Timestamp làm mã đơn hàng giả lập
+      tongTien: totalPrice,
+      trangThai: 'Chờ xác nhận',
+      riskScoreAI: 0.0,
+      isSpam: false,
+      daThanhToan: false,
+      chiTiet: copiedItems,
     );
 
     _orders.insert(0, order);
     notifyListeners();
   }
 
+  // 🛠️ ĐÃ SỬA: Hàm tìm đơn hàng theo mã đơn, ép kiểu int sang chuỗi String để không lệch với UI cũ
   OrderModel? getOrderById(String id) {
     try {
-      return _orders.firstWhere((order) => order.id == id);
+      return _orders.firstWhere((order) => (order.maDH ?? '').toString() == id);
     } catch (_) {
       return null;
     }

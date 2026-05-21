@@ -37,7 +37,8 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
   Widget build(BuildContext context) {
     return AdminLayout(
       title: 'Quản lý laptop',
-      child: Padding(
+      // 🛠️ ĐÃ SỬA: Thay đổi thuộc tính 'child:' thành 'body:' để tương thích chuẩn với AdminLayout
+      body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
@@ -128,14 +129,14 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
           rows: products.map((product) {
             return DataRow(
               cells: [
-                DataCell(Text(product.id)),
-                DataCell(Text(product.name)),
-                DataCell(Text(product.brand)),
-                DataCell(Text(product.cpu)),
-                DataCell(Text(product.ram)),
-                DataCell(Text(product.storage)),
-                DataCell(Text(product.gpu)),
-                DataCell(Text(_controller.formatCurrency(product.price))),
+                DataRowCellThayThe(product.id),
+                DataRowCellThayThe(product.name),
+                DataRowCellThayThe(product.brand),
+                DataRowCellThayThe(product.cpu),
+                DataRowCellThayThe(product.ram),
+                DataRowCellThayThe(product.storage),
+                DataRowCellThayThe(product.gpu),
+                DataRowCellThayThe(_controller.formatCurrency(product.price)),
                 DataCell(
                   Text(
                     product.stock.toString(),
@@ -205,7 +206,7 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
                   style: TextStyle(
                     color: product.stock <= 5 ? Colors.red : Colors.black,
                     fontWeight:
-                        product.stock <= 5 ? FontWeight.bold : FontWeight.normal,
+                    product.stock <= 5 ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -334,10 +335,10 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
   }
 
   Widget _buildInput(
-    TextEditingController controller,
-    String label, {
-    TextInputType keyboardType = TextInputType.text,
-  }) {
+      TextEditingController controller,
+      String label, {
+        TextInputType keyboardType = TextInputType.text,
+      }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextField(
@@ -381,4 +382,9 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
       },
     );
   }
+}
+
+// Helper tránh lỗi vặt chuỗi trống của DataTable Cell
+DataCell DataRowCellThayThe(String text) {
+  return DataCell(Text(text.isNotEmpty ? text : '---'));
 }

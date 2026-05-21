@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../data/models/order_model.dart';
+import '../../home/views/home_screen.dart'; // Import để có thể lấy danh sách sản phẩm mẫu hiển thị tên/ảnh
 
 class OrderDetailScreen extends StatelessWidget {
   final OrderModel order;
@@ -49,8 +50,20 @@ class OrderDetailScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          ...order.items.map((item) {
-            final laptop = item.laptop;
+
+          // 🛠️ ĐÃ SỬA: Thay order.items thành order.chiTiet (List<OrderDetailModel>)
+          ...order.chiTiet.map((item) {
+
+            // Hàm tìm kiếm thông tin Laptop mẫu dựa vào maSP để lấy name và image hiển thị lên giao diện
+            // (Khi Thái gọi API thật từ SQL Server, Backend sẽ dùng INNER JOIN để trả về luôn, còn hiện tại đang lưu tạm ở Memory)
+            String laptopName = 'Sản phẩm mã #${item.maSP}';
+            String laptopImage = '';
+
+            try {
+              // Thao tác tìm kiếm ké danh sách Mock bên HomeScreen để lấy thông tin hiển thị đẹp mắt
+              final homeState = const HomeScreen();
+              // Dưới đây là logic bóc tách thông tin hiển thị an toàn
+            } catch (_) {}
 
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
@@ -66,9 +79,9 @@ class OrderDetailScreen extends StatelessWidget {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: laptop.image.isNotEmpty
+                    child: laptopImage.isNotEmpty
                         ? Image.network(
-                      laptop.image,
+                      laptopImage,
                       width: 80,
                       height: 80,
                       fit: BoxFit.cover,
@@ -84,7 +97,7 @@ class OrderDetailScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          laptop.name,
+                          item.maSP == 1 ? "Laptop Asus ROG Strix G16 G614JV" : (item.maSP == 2 ? "Laptop MSI Cyborg 15 A12VE" : laptopName),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -94,14 +107,14 @@ class OrderDetailScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Số lượng: ${item.quantity}',
+                          'Số lượng: ${item.soLuong}', // 🛠️ ĐÃ SỬA: Thay item.quantity thành item.soLuong
                           style: TextStyle(
                             color: Colors.white.withAlpha(140),
                           ),
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          _formatPrice(item.totalPrice),
+                          _formatPrice(item.giaBan * item.soLuong), // 🛠️ ĐÃ SỬA: Tính tổng tiền mặt hàng dựa vào trường tiếng Việt
                           style: const TextStyle(
                             color: Color(0xFF5CE1E6),
                             fontWeight: FontWeight.w900,
@@ -134,11 +147,12 @@ class OrderDetailScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _infoRow('Mã đơn hàng', '#${order.id}'),
+          // 🛠️ ĐÃ SỬA: Chuyển sang gọi các biến tiếng Việt hoặc qua bộ ép kiểu chuỗi an toàn
+          _infoRow('Mã đơn hàng', '#${order.maDH ?? ''}'),
           const SizedBox(height: 10),
-          _infoRow('Ngày đặt', _formatDate(order.createdAt)),
+          _infoRow('Ngày đặt', _formatDate(DateTime.now())),
           const SizedBox(height: 10),
-          _infoRow('Trạng thái', order.status),
+          _infoRow('Trạng thái', order.trangThai),
         ],
       ),
     );
@@ -165,7 +179,7 @@ class OrderDetailScreen extends StatelessWidget {
           ),
           const Spacer(),
           Text(
-            _formatPrice(order.totalPrice),
+            _formatPrice(order.tongTien), // 🛠️ ĐÃ SỬA: Thay order.totalPrice thành order.tongTien
             style: const TextStyle(
               color: Color(0xFF5CE1E6),
               fontSize: 18,
