@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:flutter_laptop_ai/routes/app_routes.dart';
 import '../controllers/cart_controller.dart';
 import '../../orders/controllers/order_controller.dart';
 import '../../orders/views/order_history_screen.dart';
@@ -12,6 +14,88 @@ class CartScreen extends StatelessWidget {
       RegExp(r'(\d{3})(?=\d)'),
           (Match m) => '${m[1]}.',
     )}đ';
+  }
+
+  void _showLoginRequiredDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF0B1528),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          title: const Text(
+            'Bạn chưa đăng nhập',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'Vui lòng đăng nhập để tiếp tục đặt hàng.',
+            style: TextStyle(
+              color: Colors.white.withAlpha(150),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+              },
+              child: const Text(
+                'Hủy',
+                style: TextStyle(color: Colors.white70),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                Navigator.pushNamed(context, AppRoutes.login);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00A3E0),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Đăng nhập'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _checkout(BuildContext context, CartController cartController) {
+    final currentUser = Supabase.instance.client.auth.currentUser;
+
+    if (currentUser == null) {
+      _showLoginRequiredDialog(context);
+      return;
+    }
+
+    OrderController.instance.createOrder(
+      cartItems: cartController.items,
+      totalPrice: cartController.totalPrice,
+    );
+
+    cartController.clearCart();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        backgroundColor: Color(0xFF102A45),
+        content: Text(
+          'Đặt hàng thành công',
+          style: TextStyle(color: Colors.white),
+        ),
+      ),
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const OrderHistoryScreen(),
+      ),
+    );
   }
 
   @override
@@ -56,7 +140,6 @@ class CartScreen extends StatelessWidget {
                     final item = cartController.items[index];
                     final laptop = item.laptop;
 
-                    // 🛠️ KIỂM TRA AN TOÀN: Nếu dữ liệu sản phẩm bị lỗi null, bỏ qua không hiển thị dòng đó
                     if (laptop == null) return const SizedBox.shrink();
 
                     return Container(
@@ -117,9 +200,9 @@ class CartScreen extends StatelessWidget {
                                       _quantityButton(
                                         icon: Icons.remove,
                                         onTap: () {
-                                          // 🛠️ ĐÃ SỬA: Thay laptop.id thành laptop.maSP ?? 0
-                                          cartController
-                                              .decreaseQuantity(laptop.maSP ?? 0);
+                                          cartController.decreaseQuantity(
+                                            laptop.maSP ?? 0,
+                                          );
                                         },
                                       ),
                                       Padding(
@@ -127,7 +210,7 @@ class CartScreen extends StatelessWidget {
                                           horizontal: 12,
                                         ),
                                         child: Text(
-                                          item.soLuong.toString(), // 🛠️ ĐÃ SỬA: Đổi sang biến tiếng Việt soLuong
+                                          item.soLuong.toString(),
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 16,
@@ -138,16 +221,17 @@ class CartScreen extends StatelessWidget {
                                       _quantityButton(
                                         icon: Icons.add,
                                         onTap: () {
-                                          // 🛠️ ĐÃ SỬA: Thay laptop.id thành laptop.maSP ?? 0
-                                          cartController
-                                              .increaseQuantity(laptop.maSP ?? 0);
+                                          cartController.increaseQuantity(
+                                            laptop.maSP ?? 0,
+                                          );
                                         },
                                       ),
                                       const Spacer(),
                                       IconButton(
                                         onPressed: () {
-                                          // 🛠️ ĐÃ SỬA: Thay laptop.id thành laptop.maSP ?? 0
-                                          cartController.removeItem(laptop.maSP ?? 0);
+                                          cartController.removeItem(
+                                            laptop.maSP ?? 0,
+                                          );
                                         },
                                         icon: const Icon(
                                           Icons.delete_outline,
@@ -253,29 +337,7 @@ class CartScreen extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () {
-                OrderController.instance.createOrder(
-                  cartItems: cartController.items,
-                  totalPrice: cartController.totalPrice,
-                );
-
-                cartController.clearCart();
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    backgroundColor: Color(0xFF102A45),
-                    content: Text(
-                      'Đặt hàng thành công',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                );
-
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const OrderHistoryScreen(),
-                  ),
-                );
+                _checkout(context, cartController);
               },
               icon: const Icon(Icons.payment),
               label: const Text('Đặt hàng'),

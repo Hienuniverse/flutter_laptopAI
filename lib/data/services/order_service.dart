@@ -1,11 +1,43 @@
-import '../../core/constants/api_constants.dart';
-import '../../core/network/api_client.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../models/order_model.dart';
 
 class OrderService {
-  OrderService(this._apiClient);
+  final SupabaseClient _client = Supabase.instance.client;
 
-  final ApiClient _apiClient;
+  Future<List<OrderModel>> getOrders() async {
+    final response = await _client
+        .from('donhang')
+        .select()
+        .order('ngaydat', ascending: false);
 
-  Future<dynamic> getOrders() => _apiClient.get(ApiConstants.orders);
-  Future<dynamic> createOrder(Map<String, dynamic> data) => _apiClient.post(ApiConstants.orders, body: data);
+    return response
+        .map<OrderModel>((item) => OrderModel.fromJson(item))
+        .toList();
+  }
+
+  Future<void> createOrder({
+    required int maTK,
+    required double tongTien,
+    String phuongThucThanhToan = 'Tiền mặt',
+  }) async {
+    await _client.from('donhang').insert({
+      'matk': maTK,
+      'ngaydat': DateTime.now().toIso8601String(),
+      'tongtien': tongTien,
+      'phuongthucthanhtoan': phuongThucThanhToan,
+      'trangthai': 'Chờ xử lý',
+      'riskscore_ai': 0.0,
+    });
+  }
+
+  Future<void> updateOrderStatus({
+    required int maDH,
+    required String trangThai,
+  }) async {
+    await _client
+        .from('donhang')
+        .update({'trangthai': trangThai})
+        .eq('madh', maDH);
+  }
 }

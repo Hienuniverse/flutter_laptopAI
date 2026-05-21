@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../data/models/order_model.dart';
-import '../../home/views/home_screen.dart'; // Import để có thể lấy danh sách sản phẩm mẫu hiển thị tên/ảnh
 
 class OrderDetailScreen extends StatelessWidget {
   final OrderModel order;
@@ -13,13 +12,24 @@ class OrderDetailScreen extends StatelessWidget {
 
   String _formatPrice(double price) {
     return '${price.toStringAsFixed(0).replaceAllMapped(
-      RegExp(r'(\d{3})(?=\d)'),
-          (Match m) => '${m[1]}.',
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+          (match) => '${match[1]}.',
     )}đ';
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year} - ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    return '${date.day}/${date.month}/${date.year} '
+        '${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  Color _statusColor(String status) {
+    final lower = status.toLowerCase();
+
+    if (lower.contains('hoàn')) return Colors.greenAccent;
+    if (lower.contains('hủy')) return Colors.redAccent;
+    if (lower.contains('giao')) return Colors.orangeAccent;
+
+    return const Color(0xFF5CE1E6);
   }
 
   @override
@@ -42,7 +52,7 @@ class OrderDetailScreen extends StatelessWidget {
           _orderInfo(),
           const SizedBox(height: 16),
           const Text(
-            'Sản phẩm đã đặt',
+            'Sản phẩm trong đơn hàng',
             style: TextStyle(
               color: Colors.white,
               fontSize: 18,
@@ -50,83 +60,77 @@ class OrderDetailScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-
-          // 🛠️ ĐÃ SỬA: Thay order.items thành order.chiTiet (List<OrderDetailModel>)
-          ...order.chiTiet.map((item) {
-
-            // Hàm tìm kiếm thông tin Laptop mẫu dựa vào maSP để lấy name và image hiển thị lên giao diện
-            // (Khi Thái gọi API thật từ SQL Server, Backend sẽ dùng INNER JOIN để trả về luôn, còn hiện tại đang lưu tạm ở Memory)
-            String laptopName = 'Sản phẩm mã #${item.maSP}';
-            String laptopImage = '';
-
-            try {
-              // Thao tác tìm kiếm ké danh sách Mock bên HomeScreen để lấy thông tin hiển thị đẹp mắt
-              final homeState = const HomeScreen();
-              // Dưới đây là logic bóc tách thông tin hiển thị an toàn
-            } catch (_) {}
-
-            return Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0B1528).withAlpha(180),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.white.withAlpha(20),
+          if (order.chiTiet.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Text(
+                  'Đơn hàng chưa có chi tiết sản phẩm',
+                  style: TextStyle(color: Colors.white70),
                 ),
               ),
-              child: Row(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: laptopImage.isNotEmpty
-                        ? Image.network(
-                      laptopImage,
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return _placeholderImage();
-                      },
-                    )
-                        : _placeholderImage(),
+            )
+          else
+            ...order.chiTiet.map((item) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0B1528).withAlpha(180),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.white.withAlpha(20),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.maSP == 1 ? "Laptop Asus ROG Strix G16 G614JV" : (item.maSP == 2 ? "Laptop MSI Cyborg 15 A12VE" : laptopName),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Số lượng: ${item.soLuong}', // 🛠️ ĐÃ SỬA: Thay item.quantity thành item.soLuong
-                          style: TextStyle(
-                            color: Colors.white.withAlpha(140),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          _formatPrice(item.giaBan * item.soLuong), // 🛠️ ĐÃ SỬA: Tính tổng tiền mặt hàng dựa vào trường tiếng Việt
-                          style: const TextStyle(
-                            color: Color(0xFF5CE1E6),
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(10),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.laptop,
+                        color: Color(0xFF5CE1E6),
+                        size: 34,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          }),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Mã sản phẩm: ${item.maSP ?? ''}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Số lượng: ${item.soLuong}',
+                            style: TextStyle(
+                              color: Colors.white.withAlpha(140),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Đơn giá: ${_formatPrice(item.giaBan)}',
+                            style: const TextStyle(
+                              color: Color(0xFF5CE1E6),
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
           const SizedBox(height: 12),
           _totalSection(),
         ],
@@ -147,12 +151,48 @@ class OrderDetailScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 🛠️ ĐÃ SỬA: Chuyển sang gọi các biến tiếng Việt hoặc qua bộ ép kiểu chuỗi an toàn
           _infoRow('Mã đơn hàng', '#${order.maDH ?? ''}'),
           const SizedBox(height: 10),
-          _infoRow('Ngày đặt', _formatDate(DateTime.now())),
+          _infoRow('Mã tài khoản', '${order.maTK ?? ''}'),
           const SizedBox(height: 10),
-          _infoRow('Trạng thái', order.trangThai),
+          _infoRow('Ngày đặt', _formatDate(order.ngayDat)),
+          const SizedBox(height: 10),
+          _infoRow('Thanh toán', order.phuongThucThanhToan),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Text(
+                'Trạng thái: ',
+                style: TextStyle(
+                  color: Color(0xFF5CE1E6),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF102A45),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: _statusColor(order.trangThai),
+                  ),
+                ),
+                child: Text(
+                  order.trangThai,
+                  style: TextStyle(
+                    color: _statusColor(order.trangThai),
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          _infoRow('RiskScore AI', '${order.riskScoreAi}'),
         ],
       ),
     );
@@ -179,7 +219,7 @@ class OrderDetailScreen extends StatelessWidget {
           ),
           const Spacer(),
           Text(
-            _formatPrice(order.tongTien), // 🛠️ ĐÃ SỬA: Thay order.totalPrice thành order.tongTien
+            _formatPrice(order.tongTien),
             style: const TextStyle(
               color: Color(0xFF5CE1E6),
               fontSize: 18,
@@ -211,19 +251,6 @@ class OrderDetailScreen extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _placeholderImage() {
-    return Container(
-      width: 80,
-      height: 80,
-      color: Colors.white.withAlpha(10),
-      child: const Icon(
-        Icons.laptop,
-        color: Colors.grey,
-        size: 36,
-      ),
     );
   }
 }

@@ -2,12 +2,34 @@ import '../models/order_model.dart';
 import '../services/order_service.dart';
 
 class OrderRepository {
-  OrderRepository(this._service);
-  final OrderService _service;
+  final OrderService _orderService;
 
-  Future<List<OrderModel>> getOrders() async {
-    final data = await _service.getOrders();
-    final list = data is List ? data : data['data'] as List? ?? [];
-    return list.map((item) => OrderModel.fromJson(Map<String, dynamic>.from(item))).toList();
+  OrderRepository({OrderService? orderService})
+      : _orderService = orderService ?? OrderService();
+
+  Future<List<OrderModel>> getOrders() {
+    return _orderService.getOrders();
+  }
+
+  Future<void> createOrder({
+    required int maTK,
+    required double tongTien,
+    String phuongThucThanhToan = 'Tiền mặt',
+  }) {
+    return _orderService.createOrder(
+      maTK: maTK,
+      tongTien: tongTien,
+      phuongThucThanhToan: phuongThucThanhToan,
+    );
+  }
+
+  Future<void> updateOrderStatus({
+    required int maDH,
+    required String trangThai,
+  }) {
+    return _orderService.updateOrderStatus(
+      maDH: maDH,
+      trangThai: trangThai,
+    );
   }
 }
