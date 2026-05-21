@@ -61,10 +61,7 @@ class AppPages {
       body: BenchmarkScreen(),
     ),
 
-    AppRoutes.chatAi: (_) => const AppScaffold(
-      title: 'Tư vấn AI',
-      body: ChatAiScreen(),
-    ),
+    AppRoutes.chatAi: (_) => const ChatAiScreen(),
 
     AppRoutes.profile: (_) => const AppScaffold(
       title: 'Hồ sơ cá nhân',
