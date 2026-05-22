@@ -9,6 +9,7 @@ import '../features/admin/views/manage_categories_screen.dart';
 import '../features/admin/views/manage_orders_screen.dart';
 import '../features/admin/views/manage_products_screen.dart';
 import '../features/admin/views/manage_reviews_screen.dart';
+import '../features/admin/views/manage_accounts_screen.dart';
 
 import '../features/auth/views/login_screen.dart';
 import '../features/auth/views/register_screen.dart';
@@ -56,19 +57,16 @@ class AppPages {
     AppRoutes.cart: (_) => const CartScreen(),
     AppRoutes.orders: (_) => const OrderHistoryScreen(),
 
-    AppRoutes.benchmark: (_) => const AppScaffold(
-      title: 'So sánh benchmark',
-      body: BenchmarkScreen(),
-    ),
+    AppRoutes.benchmark: (_) =>
+        const AppScaffold(title: 'So sánh benchmark', body: BenchmarkScreen()),
 
     AppRoutes.chatAi: (_) => const ChatAiScreen(),
 
-    AppRoutes.profile: (_) => const AppScaffold(
-      title: 'Hồ sơ cá nhân',
-      body: ProfileScreen(),
-    ),
+    AppRoutes.profile: (_) =>
+        const AppScaffold(title: 'Hồ sơ cá nhân', body: ProfileScreen()),
 
     AppRoutes.adminDashboard: (_) => const DashboardScreen(),
+    AppRoutes.adminAccounts: (_) => const ManageAccountsScreen(),
     AppRoutes.adminProducts: (_) => const ManageProductsScreen(),
     AppRoutes.adminCategories: (_) => const ManageCategoriesScreen(),
     AppRoutes.adminOrders: (_) => const ManageOrdersScreen(),

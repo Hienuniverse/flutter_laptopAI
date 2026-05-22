@@ -67,6 +67,12 @@ class AdminLayout extends StatelessWidget {
           ),
           _buildMenuItem(
             context: context,
+            icon: Icons.manage_accounts,
+            title: 'Quản lý tài khoản',
+            routeName: AppRoutes.adminAccounts,
+          ),
+          _buildMenuItem(
+            context: context,
             icon: Icons.laptop_mac,
             title: 'Quản lý laptop',
             routeName: AppRoutes.adminProducts,
