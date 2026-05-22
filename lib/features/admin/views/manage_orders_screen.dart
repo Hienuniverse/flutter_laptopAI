@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/layouts/admin_layout.dart';
+import '../../../shared/widgets/admin_pagination.dart';
 import '../controllers/admin_order_controller.dart';
 
 class ManageOrdersScreen extends StatefulWidget {
@@ -12,6 +13,9 @@ class ManageOrdersScreen extends StatefulWidget {
 
 class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
   late final AdminOrderController _controller;
+
+  int _currentPage = 1;
+  final int _itemsPerPage = 10;
 
   @override
   void initState() {
@@ -45,9 +49,7 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
             const SizedBox(height: 16),
             _buildFilterBar(),
             const SizedBox(height: 16),
-            Expanded(
-              child: _buildOrderList(),
-            ),
+            Expanded(child: _buildOrderList()),
           ],
         ),
       ),
@@ -59,10 +61,7 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
       alignment: Alignment.centerLeft,
       child: Text(
         'Danh sách đơn hàng',
-        style: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-        ),
+        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -93,34 +92,35 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
 
   Widget _buildSearchBox() {
     return TextField(
-      onChanged: _controller.searchOrder,
+      onChanged: (value) {
+        setState(() {
+          _currentPage = 1;
+        });
+        _controller.searchOrder(value);
+      },
       decoration: InputDecoration(
         hintText: 'Tìm kiếm theo mã đơn, tên khách hàng, số điện thoại...',
         prefixIcon: const Icon(Icons.search),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 
   Widget _buildStatusDropdown() {
     return DropdownButtonFormField<String>(
-      value: _controller.selectedStatus,
+      initialValue: _controller.selectedStatus,
       decoration: InputDecoration(
         labelText: 'Trạng thái',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
       items: ['Tất cả', ..._controller.orderStatuses].map((status) {
-        return DropdownMenuItem(
-          value: status,
-          child: Text(status),
-        );
+        return DropdownMenuItem(value: status, child: Text(status));
       }).toList(),
       onChanged: (value) {
         if (value != null) {
+          setState(() {
+            _currentPage = 1;
+          });
           _controller.filterOrderStatus(value);
         }
       },
@@ -129,19 +129,48 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
 
   Widget _buildOrderList() {
     final orders = _controller.orders;
+    final pagedOrders = _getPagedOrders(orders);
 
     if (orders.isEmpty) {
-      return const Center(
-        child: Text('Không tìm thấy đơn hàng phù hợp'),
-      );
+      return const Center(child: Text('Không tìm thấy đơn hàng phù hợp'));
     }
 
-    return ListView.separated(
-      itemCount: orders.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        return _buildOrderCard(orders[index]);
-      },
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.separated(
+            itemCount: pagedOrders.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              return _buildOrderCard(pagedOrders[index]);
+            },
+          ),
+        ),
+        AdminPagination(
+          currentPage: _currentPage,
+          totalItems: orders.length,
+          itemsPerPage: _itemsPerPage,
+          onPageChanged: (page) {
+            setState(() {
+              _currentPage = page;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  List<AdminOrder> _getPagedOrders(List<AdminOrder> orders) {
+    final startIndex = (_currentPage - 1) * _itemsPerPage;
+    final endIndex = startIndex + _itemsPerPage;
+
+    if (startIndex >= orders.length) {
+      return [];
+    }
+
+    return orders.sublist(
+      startIndex,
+      endIndex > orders.length ? orders.length : endIndex,
     );
   }
 
@@ -198,10 +227,7 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
         Expanded(
           child: Text(
             order.id,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
         _buildStatusBadge(order.status),
@@ -213,10 +239,7 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Sản phẩm:',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        const Text('Sản phẩm:', style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
         ...items.map((item) {
           return Padding(
@@ -254,7 +277,7 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -319,16 +342,13 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
           content: StatefulBuilder(
             builder: (context, setDialogState) {
               return DropdownButtonFormField<String>(
-                value: selectedStatus,
+                initialValue: selectedStatus,
                 decoration: const InputDecoration(
                   labelText: 'Trạng thái đơn hàng',
                   border: OutlineInputBorder(),
                 ),
                 items: _controller.orderStatuses.map((status) {
-                  return DropdownMenuItem(
-                    value: status,
-                    child: Text(status),
-                  );
+                  return DropdownMenuItem(value: status, child: Text(status));
                 }).toList(),
                 onChanged: (value) {
                   if (value != null) {

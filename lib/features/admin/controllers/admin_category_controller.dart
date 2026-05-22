@@ -17,16 +17,19 @@ class AdminCategoryController extends ChangeNotifier {
   String get keyword => _keyword;
 
   List<CategoryModel> get categories {
-    if (_keyword.trim().isEmpty) {
-      return List.unmodifiable(_categories);
+    var result = List<CategoryModel>.from(_categories);
+
+    if (_keyword.trim().isNotEmpty) {
+      final lowerKeyword = _keyword.toLowerCase();
+
+      result = result.where((category) {
+        return category.tenDM.toLowerCase().contains(lowerKeyword) ||
+            (category.moTa ?? '').toLowerCase().contains(lowerKeyword) ||
+            (category.slug ?? '').toLowerCase().contains(lowerKeyword);
+      }).toList();
     }
 
-    final lowerKeyword = _keyword.toLowerCase();
-
-    return _categories.where((category) {
-      return category.tenDM.toLowerCase().contains(lowerKeyword) ||
-          (category.moTa ?? '').toLowerCase().contains(lowerKeyword);
-    }).toList();
+    return result;
   }
 
   AdminCategoryController() {
@@ -41,16 +44,24 @@ class AdminCategoryController extends ChangeNotifier {
     try {
       final data = await _client
           .from('danhmuc')
-          .select()
+          .select('*')
           .order('madm', ascending: true);
+
+      debugPrint('DANHMUC RAW DATA: $data');
 
       _categories
         ..clear()
         ..addAll(
-          data.map((item) => CategoryModel.fromJson(item as Map)).toList(),
+          (data as List).map((item) => CategoryModel.fromJson(item as Map)),
         );
+
+      if (_categories.isEmpty) {
+        _errorMessage =
+            'Không lấy được dữ liệu danh mục. Có thể bảng danhmuc chưa có policy SELECT cho anon/authenticated.';
+      }
     } catch (e) {
       _errorMessage = 'Không thể tải danh mục: $e';
+      debugPrint('DANHMUC ERROR: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -62,31 +73,36 @@ class AdminCategoryController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addCategory({
+  Future<bool> addCategory({
     required String tenDM,
     String? moTa,
     String? slug,
     String icon = 'FolderTree',
     String colorClass = 'cyan',
+    bool trangThai = true,
   }) async {
     try {
+      _errorMessage = null;
+
       await _client.from('danhmuc').insert({
         'tendm': tenDM,
         'mota': moTa,
         'slug': slug,
         'icon': icon,
         'colorclass': colorClass,
-        'trangthai': true,
+        'trangthai': trangThai,
       });
 
       await loadCategories();
+      return true;
     } catch (e) {
       _errorMessage = 'Không thể thêm danh mục: $e';
       notifyListeners();
+      return false;
     }
   }
 
-  Future<void> updateCategory({
+  Future<bool> updateCategory({
     required int maDM,
     required String tenDM,
     String? moTa,
@@ -96,32 +112,42 @@ class AdminCategoryController extends ChangeNotifier {
     bool trangThai = true,
   }) async {
     try {
-      await _client.from('danhmuc').update({
-        'tendm': tenDM,
-        'mota': moTa,
-        'slug': slug,
-        'icon': icon,
-        'colorclass': colorClass,
-        'trangthai': trangThai,
-      }).eq('madm', maDM);
+      _errorMessage = null;
+
+      await _client
+          .from('danhmuc')
+          .update({
+            'tendm': tenDM,
+            'mota': moTa,
+            'slug': slug,
+            'icon': icon,
+            'colorclass': colorClass,
+            'trangthai': trangThai,
+          })
+          .eq('madm', maDM);
 
       await loadCategories();
+      return true;
     } catch (e) {
       _errorMessage = 'Không thể cập nhật danh mục: $e';
       notifyListeners();
+      return false;
     }
   }
 
-  Future<void> deleteCategory(int maDM) async {
+  Future<bool> deleteCategory(int maDM) async {
     try {
-      await _client.from('danhmuc').update({
-        'trangthai': false,
-      }).eq('madm', maDM);
+      _errorMessage = null;
+
+      await _client.from('danhmuc').delete().eq('madm', maDM);
 
       await loadCategories();
+      return true;
     } catch (e) {
-      _errorMessage = 'Không thể xóa danh mục: $e';
+      _errorMessage =
+          'Không thể xóa danh mục. Có thể danh mục đang được sản phẩm sử dụng: $e';
       notifyListeners();
+      return false;
     }
   }
 }

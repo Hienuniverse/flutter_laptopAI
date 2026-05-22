@@ -6,8 +6,9 @@ class CategoryModel {
   final String icon;
   final String colorClass;
   final bool trangThai;
+  final String? ngayTao;
 
-  CategoryModel({
+  const CategoryModel({
     this.maDM,
     required this.tenDM,
     this.moTa,
@@ -15,6 +16,7 @@ class CategoryModel {
     this.icon = 'FolderTree',
     this.colorClass = 'cyan',
     this.trangThai = true,
+    this.ngayTao,
   });
 
   int? get id => maDM;
@@ -23,17 +25,24 @@ class CategoryModel {
 
   factory CategoryModel.fromJson(Map json) {
     return CategoryModel(
-      maDM: json['MaDM'] ?? json['maDM'] ?? json['madm'],
-      tenDM: json['TenDM'] ?? json['tenDM'] ?? json['tendm'] ?? '',
-      moTa: json['MoTa'] ?? json['moTa'] ?? json['mota'],
-      slug: json['Slug'] ?? json['slug'],
-      icon: json['Icon'] ?? json['icon'] ?? 'FolderTree',
-      colorClass: json['ColorClass'] ?? json['colorClass'] ?? 'cyan',
-      trangThai: json['TrangThai'] == true ||
-          json['trangThai'] == true ||
-          json['trangthai'] == true ||
-          json['trangthai'] == 1 ||
-          json['TrangThai'] == 1,
+      maDM: _toInt(json['madm'] ?? json['maDM'] ?? json['MaDM']),
+      tenDM: (json['tendm'] ?? json['tenDM'] ?? json['TenDM'] ?? '').toString(),
+      moTa:
+          json['mota']?.toString() ??
+          json['moTa']?.toString() ??
+          json['MoTa']?.toString(),
+      slug: json['slug']?.toString() ?? json['Slug']?.toString(),
+      icon: (json['icon'] ?? json['Icon'] ?? 'FolderTree').toString(),
+      colorClass:
+          (json['colorclass'] ??
+                  json['colorClass'] ??
+                  json['ColorClass'] ??
+                  'cyan')
+              .toString(),
+      trangThai: _toBool(
+        json['trangthai'] ?? json['trangThai'] ?? json['TrangThai'],
+      ),
+      ngayTao: json['ngaytao']?.toString() ?? json['ngayTao']?.toString(),
     );
   }
 
@@ -47,5 +56,35 @@ class CategoryModel {
       'colorclass': colorClass,
       'trangthai': trangThai,
     };
+  }
+
+  static int? _toInt(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+
+    if (value is int) {
+      return value;
+    }
+
+    return int.tryParse(value.toString());
+  }
+
+  static bool _toBool(dynamic value) {
+    if (value == null) {
+      return true;
+    }
+
+    if (value is bool) {
+      return value;
+    }
+
+    if (value is int) {
+      return value == 1;
+    }
+
+    final text = value.toString().toLowerCase();
+
+    return text == 'true' || text == '1';
   }
 }
