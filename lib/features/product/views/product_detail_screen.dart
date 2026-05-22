@@ -3,7 +3,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:flutter_laptop_ai/data/models/laptop_model.dart';
 import 'package:flutter_laptop_ai/features/cart/controllers/cart_controller.dart';
-import 'package:flutter_laptop_ai/features/comment/views/comment_screen.dart';
 import 'package:flutter_laptop_ai/routes/app_routes.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -24,6 +23,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
           (match) => '${match[1]}.',
     )}đ';
+  }
+
+  String _imageUrl(LaptopModel laptop) {
+    final raw = laptop.hinhAnh ?? '';
+
+    if (raw.isEmpty) return '';
+
+    if (raw.startsWith('[')) {
+      final match = RegExp(r'https?:\/\/[^"\]]+').firstMatch(raw);
+      return match?.group(0) ?? '';
+    }
+
+    return raw;
   }
 
   void _showLoginRequiredDialog(BuildContext context, String message) {
@@ -99,24 +111,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  void _openReviewScreen(BuildContext context) {
-    final currentUser = Supabase.instance.client.auth.currentUser;
-
-    if (currentUser == null) {
-      _showLoginRequiredDialog(context);
-      return;
-    }
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CommentScreen(
-          maSP: laptop.maSP ?? 0,
-          maTK: 1,
-          tenSP: laptop.tenSP,
-        ),
-      ),
-    );
   List<LaptopModel> _allProducts() {
     return [
       LaptopModel(
@@ -198,7 +192,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ram: '16GB',
         oCung: '512GB SSD',
         manHinh: '14 inch Retina',
-        moTa: 'MacBook hiệu năng cao cho làm việc chuyên nghiệp',
+        moTa: 'MacBook hiệu năng cao',
         soLuongTon: 4,
         aiScore: 96,
       ),
@@ -215,7 +209,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ram: '16GB',
         oCung: '512GB SSD',
         manHinh: '15.6 inch FHD',
-        moTa: 'Laptop Dell văn phòng, học tập',
+        moTa: 'Laptop Dell văn phòng',
         soLuongTon: 12,
         aiScore: 89,
       ),
@@ -266,7 +260,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ram: '8GB',
         oCung: '512GB SSD',
         manHinh: '15.6 inch FHD',
-        moTa: 'Laptop ASUS học tập và văn phòng',
+        moTa: 'Laptop ASUS học tập',
         soLuongTon: 15,
         aiScore: 88,
       ),
@@ -362,7 +356,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       score += 15;
     }
 
-    if ((item.oCung ?? '').toLowerCase() == (current.oCung ?? '').toLowerCase()) {
+    if ((item.oCung ?? '').toLowerCase() ==
+        (current.oCung ?? '').toLowerCase()) {
       score += 10;
     }
 
@@ -412,6 +407,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
 
     final priceDifference = (item.giaBan - current.giaBan).abs();
+
     if (priceDifference <= 5000000) {
       return 'Giá gần nhau';
     }
@@ -448,18 +444,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             children: [
               _imageSection(laptop),
               const SizedBox(height: 16),
-
-              _infoSection(),
-              const SizedBox(height: 16),
-
-              _specSection(),
-              const SizedBox(height: 16),
-
-              _descriptionSection(),
-              const SizedBox(height: 16),
-
-              _reviewButton(context),
-
               _infoSection(laptop),
               const SizedBox(height: 16),
               _specSection(laptop),
@@ -476,6 +460,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _imageSection(LaptopModel laptop) {
+    final imageUrl = _imageUrl(laptop);
+
     return Container(
       height: 260,
       width: double.infinity,
@@ -490,9 +476,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       child: Stack(
         children: [
           Center(
-            child: laptop.image.isNotEmpty
+            child: imageUrl.isNotEmpty
                 ? Image.network(
-              laptop.image,
+              imageUrl,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) {
                 return _placeholderImage();
@@ -503,27 +489,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           Positioned(
             top: 0,
             right: 0,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 5,
-              ),
-              decoration: BoxDecoration(
-                color: const Color(0xFF102A45),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: const Color(0xFF00A3E0).withAlpha(150),
-                ),
-              ),
-              child: Text(
-                'AI Score: ${laptop.aiScore}',
-                style: const TextStyle(
-                  color: Color(0xFF5CE1E6),
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+            child: _aiScoreBadge(laptop.aiScore),
           ),
         ],
       ),
@@ -553,7 +519,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
           ),
           const SizedBox(height: 10),
-
           Text(
             _formatPrice(laptop.giaBan),
             style: const TextStyle(
@@ -562,25 +527,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               fontWeight: FontWeight.w900,
             ),
           ),
-
           const SizedBox(height: 14),
-
           _infoRow(
             icon: Icons.business,
             title: 'Thương hiệu',
             value: laptop.brand,
           ),
-
           const SizedBox(height: 8),
-
           _infoRow(
             icon: Icons.category_outlined,
             title: 'Danh mục',
             value: laptop.category,
           ),
-
           const SizedBox(height: 8),
-
           _infoRow(
             icon: Icons.inventory_2_outlined,
             title: 'Tồn kho',
@@ -613,15 +572,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               fontWeight: FontWeight.w900,
             ),
           ),
-
           const SizedBox(height: 14),
-
           _specItem('CPU', laptop.cpu ?? 'Đang cập nhật'),
           _specItem('RAM', laptop.ram ?? 'Đang cập nhật'),
           _specItem('Ổ cứng', laptop.oCung ?? 'Đang cập nhật'),
           _specItem('GPU', laptop.vga ?? 'Đang cập nhật'),
           _specItem('Màn hình', laptop.manHinh ?? 'Đang cập nhật'),
-
           _specItem(
             'Trọng lượng',
             laptop.trongLuong != null
@@ -655,9 +611,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               fontWeight: FontWeight.w900,
             ),
           ),
-
           const SizedBox(height: 10),
-
           Text(
             laptop.moTa?.isNotEmpty == true
                 ? laptop.moTa!
@@ -673,27 +627,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _reviewButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: () {
-          _openReviewScreen(context);
-        },
-        icon: const Icon(Icons.star_rate_rounded),
-        label: const Text('Xem / Viết đánh giá'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF5CE1E6),
-          foregroundColor: const Color(0xFF030A16),
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
   Widget _relatedProductsSection(LaptopModel laptop) {
     final relatedProducts = _relatedProducts(laptop);
 
@@ -751,6 +684,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       LaptopModel laptop,
       ) {
     final reason = _recommendReason(currentLaptop, laptop);
+    final imageUrl = _imageUrl(laptop);
 
     return GestureDetector(
       onTap: () {
@@ -784,9 +718,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         top: Radius.circular(16),
                       ),
                     ),
-                    child: laptop.image.isNotEmpty
+                    child: imageUrl.isNotEmpty
                         ? Image.network(
-                      laptop.image,
+                      imageUrl,
                       fit: BoxFit.contain,
                       errorBuilder: (context, error, stackTrace) {
                         return _placeholderImage();
@@ -848,27 +782,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             Positioned(
               top: 8,
               right: 8,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 7,
-                  vertical: 3,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF030A16),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: const Color(0xFF00A3E0).withAlpha(150),
-                  ),
-                ),
-                child: Text(
-                  'AI: ${laptop.aiScore}',
-                  style: const TextStyle(
-                    color: Color(0xFF5CE1E6),
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+              child: _aiScoreBadge(laptop.aiScore, small: true),
             ),
           ],
         ),
@@ -927,7 +841,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           size: 18,
         ),
         const SizedBox(width: 8),
-
         Text(
           '$title: ',
           style: const TextStyle(
@@ -935,7 +848,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-
         Expanded(
           child: Text(
             value,
@@ -965,7 +877,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               ),
             ),
           ),
-
           Expanded(
             child: Text(
               value,
@@ -975,6 +886,30 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _aiScoreBadge(int score, {bool small = false}) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: small ? 7 : 10,
+        vertical: small ? 3 : 5,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFF030A16),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF00A3E0).withAlpha(150),
+        ),
+      ),
+      child: Text(
+        small ? 'AI: $score' : 'AI Score: $score',
+        style: TextStyle(
+          color: const Color(0xFF5CE1E6),
+          fontSize: small ? 9 : 11,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
