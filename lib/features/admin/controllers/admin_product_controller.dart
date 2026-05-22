@@ -1,106 +1,22 @@
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class AdminProduct {
-  final String id;
-  final String name;
-  final String brand;
-  final String cpu;
-  final String ram;
-  final String storage;
-  final String gpu;
-  final double price;
-  final int stock;
-
-  const AdminProduct({
-    required this.id,
-    required this.name,
-    required this.brand,
-    required this.cpu,
-    required this.ram,
-    required this.storage,
-    required this.gpu,
-    required this.price,
-    required this.stock,
-  });
-
-  AdminProduct copyWith({
-    String? id,
-    String? name,
-    String? brand,
-    String? cpu,
-    String? ram,
-    String? storage,
-    String? gpu,
-    double? price,
-    int? stock,
-  }) {
-    return AdminProduct(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      brand: brand ?? this.brand,
-      cpu: cpu ?? this.cpu,
-      ram: ram ?? this.ram,
-      storage: storage ?? this.storage,
-      gpu: gpu ?? this.gpu,
-      price: price ?? this.price,
-      stock: stock ?? this.stock,
-    );
-  }
-}
+import '../../../data/models/laptop_model.dart';
 
 class AdminProductController extends ChangeNotifier {
-  final List<AdminProduct> _products = [
-    const AdminProduct(
-      id: 'LP001',
-      name: 'Asus Vivobook 15',
-      brand: 'Asus',
-      cpu: 'Intel Core i5',
-      ram: '8GB',
-      storage: '512GB SSD',
-      gpu: 'Intel Iris Xe',
-      price: 15900000,
-      stock: 12,
-    ),
-    const AdminProduct(
-      id: 'LP002',
-      name: 'Acer Aspire 7',
-      brand: 'Acer',
-      cpu: 'AMD Ryzen 5',
-      ram: '8GB',
-      storage: '512GB SSD',
-      gpu: 'GTX 1650',
-      price: 18900000,
-      stock: 5,
-    ),
-    const AdminProduct(
-      id: 'LP003',
-      name: 'Lenovo Legion 5',
-      brand: 'Lenovo',
-      cpu: 'AMD Ryzen 7',
-      ram: '16GB',
-      storage: '1TB SSD',
-      gpu: 'RTX 3060',
-      price: 28900000,
-      stock: 3,
-    ),
-    const AdminProduct(
-      id: 'LP004',
-      name: 'MacBook Air M2',
-      brand: 'Apple',
-      cpu: 'Apple M2',
-      ram: '8GB',
-      storage: '256GB SSD',
-      gpu: 'Apple GPU',
-      price: 26900000,
-      stock: 8,
-    ),
-  ];
+  final SupabaseClient _client = Supabase.instance.client;
 
+  final List<LaptopModel> _products = [];
+
+  bool _isLoading = false;
+  String? _errorMessage;
   String _keyword = '';
 
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
   String get keyword => _keyword;
 
-  List<AdminProduct> get products {
+  List<LaptopModel> get products {
     if (_keyword.trim().isEmpty) {
       return List.unmodifiable(_products);
     }
@@ -108,10 +24,44 @@ class AdminProductController extends ChangeNotifier {
     final lowerKeyword = _keyword.toLowerCase();
 
     return _products.where((product) {
-      return product.name.toLowerCase().contains(lowerKeyword) ||
-          product.brand.toLowerCase().contains(lowerKeyword) ||
-          product.cpu.toLowerCase().contains(lowerKeyword);
+      return product.tenSP.toLowerCase().contains(lowerKeyword) ||
+          (product.cpu ?? '').toLowerCase().contains(lowerKeyword) ||
+          (product.ram ?? '').toLowerCase().contains(lowerKeyword) ||
+          (product.oCung ?? '').toLowerCase().contains(lowerKeyword) ||
+          (product.vga ?? '').toLowerCase().contains(lowerKeyword);
     }).toList();
+  }
+
+  AdminProductController() {
+    loadProducts();
+  }
+
+  Future<void> loadProducts() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final data = await _client
+          .from('sanpham')
+          .select()
+          .order('masp', ascending: true);
+
+      _products
+        ..clear()
+        ..addAll(
+          // Supabase returns Map<dynamic, dynamic>, convert to Map<String, dynamic>
+          data
+              .map((item) => LaptopModel.fromJson(
+                  Map<String, dynamic>.from(item as Map)))
+              .toList(),
+        );
+    } catch (e) {
+      _errorMessage = 'Không thể tải danh sách laptop: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   void searchProduct(String keyword) {
@@ -119,28 +69,95 @@ class AdminProductController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addProduct(AdminProduct product) {
-    _products.add(product);
-    notifyListeners();
-  }
+  Future<void> addProduct({
+    required String tenSP,
+    required double giaBan,
+    required int soLuongTon,
+    int? maHang,
+    int? maDM,
+    String? cpu,
+    String? ram,
+    String? oCung,
+    String? vga,
+    String? manHinh,
+    String? moTa,
+    String? hinhAnh,
+  }) async {
+    try {
+      await _client.from('sanpham').insert({
+        'tensp': tenSP,
+        'mahang': maHang,
+        'madm': maDM,
+        'giaban': giaBan,
+        'soluongton': soLuongTon,
+        'hinhanh': hinhAnh,
+        'cpu': cpu,
+        'ram': ram,
+        'o_cung': oCung,
+        'vga': vga,
+        'manhinh': manHinh,
+        'mota': moTa,
+        'trangthai': true,
+      });
 
-  void updateProduct(AdminProduct product) {
-    final index = _products.indexWhere((item) => item.id == product.id);
-
-    if (index != -1) {
-      _products[index] = product;
+      await loadProducts();
+    } catch (e) {
+      _errorMessage = 'Không thể thêm laptop: $e';
       notifyListeners();
     }
   }
 
-  void deleteProduct(String id) {
-    _products.removeWhere((product) => product.id == id);
-    notifyListeners();
+  Future<void> updateProduct({
+    required int maSP,
+    required String tenSP,
+    required double giaBan,
+    required int soLuongTon,
+    int? maHang,
+    int? maDM,
+    String? cpu,
+    String? ram,
+    String? oCung,
+    String? vga,
+    String? manHinh,
+    String? moTa,
+    String? hinhAnh,
+    bool trangThai = true,
+  }) async {
+    try {
+      await _client.from('sanpham').update({
+        'tensp': tenSP,
+        'mahang': maHang,
+        'madm': maDM,
+        'giaban': giaBan,
+        'soluongton': soLuongTon,
+        'hinhanh': hinhAnh,
+        'cpu': cpu,
+        'ram': ram,
+        'o_cung': oCung,
+        'vga': vga,
+        'manhinh': manHinh,
+        'mota': moTa,
+        'trangthai': trangThai,
+      }).eq('masp', maSP);
+
+      await loadProducts();
+    } catch (e) {
+      _errorMessage = 'Không thể cập nhật laptop: $e';
+      notifyListeners();
+    }
   }
 
-  String generateProductId() {
-    final nextNumber = _products.length + 1;
-    return 'LP${nextNumber.toString().padLeft(3, '0')}';
+  Future<void> deleteProduct(int maSP) async {
+    try {
+      await _client.from('sanpham').update({
+        'trangthai': false,
+      }).eq('masp', maSP);
+
+      await loadProducts();
+    } catch (e) {
+      _errorMessage = 'Không thể xóa laptop: $e';
+      notifyListeners();
+    }
   }
 
   String formatCurrency(double value) {
@@ -149,4 +166,4 @@ class AdminProductController extends ChangeNotifier {
           (match) => '${match[1]}.',
         )} đ';
   }
-}   
+}
