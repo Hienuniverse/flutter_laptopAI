@@ -14,6 +14,8 @@ class LaptopModel {
   final double? trongLuong;
   final String? moTa;
   final bool trangThai;
+
+  // 🔥 AI SCORE
   final int aiScore;
 
   LaptopModel({
@@ -36,42 +38,117 @@ class LaptopModel {
   });
 
   int? get id => maSP;
+
   String get name => tenSP;
+
   double get price => giaBan;
+
   int get stock => soLuongTon;
-  String get image => hinhAnh ?? 'https://picsum.photos/200';
+
+  String get image =>
+      hinhAnh ?? 'https://picsum.photos/200';
+
   String get brand => 'Hãng mã $maHang';
+
   String get category => 'Danh mục $maDM';
+
   String? get gpu => vga;
+
   String? get storage => oCung;
+
   String? get screen => manHinh;
+
   String? get description => moTa;
 
-  factory LaptopModel.fromJson(Map<String, dynamic> json) {
+  factory LaptopModel.fromJson(
+      Map<String, dynamic> json,
+      ) {
     final hinhAnhData =
-        json['HinhAnh'] ?? json['hinhAnh'] ?? json['hinhanh'];
+        json['HinhAnh'] ??
+            json['hinhAnh'] ??
+            json['hinhanh'];
 
     return LaptopModel(
-      maSP: json['MaSP'] ?? json['maSP'] ?? json['masp'],
-      tenSP: json['TenSP'] ?? json['tenSP'] ?? json['tensp'] ?? '',
-      maHang: json['MaHang'] ?? json['maHang'] ?? json['mahang'],
-      maDM: json['MaDM'] ?? json['maDM'] ?? json['madm'],
-      giaBan: ((json['GiaBan'] ?? json['giaBan'] ?? json['giaban'] ?? 0) as num).toDouble(),
-      soLuongTon: json['SoLuongTon'] ?? json['soLuongTon'] ?? json['soluongton'] ?? 0,
+      maSP:
+      json['MaSP'] ??
+          json['maSP'] ??
+          json['masp'],
+
+      tenSP:
+      json['TenSP'] ??
+          json['tenSP'] ??
+          json['tensp'] ??
+          '',
+
+      maHang:
+      json['MaHang'] ??
+          json['maHang'] ??
+          json['mahang'],
+
+      maDM:
+      json['MaDM'] ??
+          json['maDM'] ??
+          json['madm'],
+
+      giaBan: ((json['GiaBan'] ??
+          json['giaBan'] ??
+          json['giaban'] ??
+          0)
+      as num)
+          .toDouble(),
+
+      soLuongTon:
+      json['SoLuongTon'] ??
+          json['soLuongTon'] ??
+          json['soluongton'] ??
+          0,
+
       hinhAnh: hinhAnhData is List
-          ? (hinhAnhData.isNotEmpty ? hinhAnhData.first.toString() : null)
+          ? (hinhAnhData.isNotEmpty
+          ? hinhAnhData.first.toString()
+          : null)
           : hinhAnhData?.toString(),
+
       cpu: json['CPU'] ?? json['cpu'],
+
       ram: json['RAM'] ?? json['ram'],
-      oCung: json['O_Cung'] ?? json['oCung'] ?? json['o_cung'],
+
+      oCung:
+      json['O_Cung'] ??
+          json['oCung'] ??
+          json['o_cung'],
+
       vga: json['VGA'] ?? json['vga'],
-      manHinh: json['ManHinh'] ?? json['manHinh'] ?? json['manhinh'],
-      trongLuong: ((json['TrongLuong'] ?? json['trongLuong'] ?? json['trongluong'] ?? 0) as num).toDouble(),
-      moTa: json['MoTa'] ?? json['moTa'] ?? json['mota'],
-      trangThai: json['TrangThai'] == true ||
+
+      manHinh:
+      json['ManHinh'] ??
+          json['manHinh'] ??
+          json['manhinh'],
+
+      trongLuong: ((json['TrongLuong'] ??
+          json['trongLuong'] ??
+          json['trongluong'] ??
+          0)
+      as num)
+          .toDouble(),
+
+      moTa:
+      json['MoTa'] ??
+          json['moTa'] ??
+          json['mota'],
+
+      trangThai:
+      json['TrangThai'] == true ||
           json['TrangThai'] == 1 ||
           json['trangthai'] == true,
-      aiScore: json['DiemTong'] ?? json['aiScore'] ?? json['diemtong'] ?? 0,
+
+      // 🔥 AI SCORE
+      aiScore:
+      json['aiscore'] ??
+          json['aiScore'] ??
+          json['DiemTong'] ??
+          json['diemtong'] ??
+          0,
     );
   }
 
@@ -92,7 +169,9 @@ class LaptopModel {
       'trongluong': trongLuong,
       'mota': moTa,
       'trangthai': trangThai,
-      'diemtong': aiScore,
+
+      // 🔥 LƯU AI SCORE
+      'aiscore': aiScore,
     };
   }
 }
