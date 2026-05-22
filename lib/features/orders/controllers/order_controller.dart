@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../../../data/models/cart_item_model.dart';
-import '../../../data/models/order_detail_model.dart';
 import '../../../data/models/order_model.dart';
+import '../../../data/repositories/order_repository.dart';
 
 class OrderController extends ChangeNotifier {
   OrderController._();
 
   static final OrderController instance = OrderController._();
+
+  final OrderRepository _orderRepository = OrderRepository();
 
   final List<OrderModel> _orders = [];
 
@@ -15,39 +17,50 @@ class OrderController extends ChangeNotifier {
 
   bool get isEmpty => _orders.isEmpty;
 
-  void createOrder({
+  bool _isLoading = false;
+
+  bool get isLoading => _isLoading;
+
+  Future<void> loadOrders() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final data = await _orderRepository.getOrders();
+
+      _orders
+        ..clear()
+        ..addAll(data);
+    } catch (e) {
+      debugPrint('Lỗi tải đơn hàng: $e');
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> createOrder({
     required List<CartItemModel> cartItems,
     required double totalPrice,
-  }) {
+    String phuongThucThanhToan = 'Tiền mặt',
+  }) async {
     if (cartItems.isEmpty) return;
 
-    final List<OrderDetailModel> details = cartItems
-        .where((item) => item.laptop != null)
-        .map((item) {
-      final laptop = item.laptop!;
-
-      return OrderDetailModel(
-        maSP: laptop.maSP,
-        soLuong: item.quantity,
-        giaBan: laptop.giaBan,
+    try {
+      final order = await _orderRepository.createOrder(
+        cartItems: cartItems,
+        totalPrice: totalPrice,
+        phuongThucThanhToan: phuongThucThanhToan,
       );
-    }).toList();
 
-    if (details.isEmpty) return;
-
-    final order = OrderModel(
-      maDH: DateTime.now().millisecondsSinceEpoch,
-      maTK: 1,
-      ngayDat: DateTime.now(),
-      tongTien: totalPrice,
-      phuongThucThanhToan: 'Tiền mặt',
-      trangThai: 'Chờ xử lý',
-      riskScoreAi: 0.0,
-      chiTiet: details,
-    );
-
-    _orders.insert(0, order);
-    notifyListeners();
+      if (order != null) {
+        _orders.insert(0, order);
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Lỗi tạo đơn hàng: $e');
+      rethrow;
+    }
   }
 
   OrderModel? getOrderById(int maDH) {
@@ -56,5 +69,10 @@ class OrderController extends ChangeNotifier {
     } catch (_) {
       return null;
     }
+  }
+
+  void clearOrders() {
+    _orders.clear();
+    notifyListeners();
   }
 }
