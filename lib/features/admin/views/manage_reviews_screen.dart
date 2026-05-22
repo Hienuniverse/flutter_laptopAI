@@ -15,7 +15,7 @@ class _ManageReviewsScreenState extends State<ManageReviewsScreen> {
   late final AdminOrderController _controller;
 
   int _currentPage = 1;
-  final int _itemsPerPage = 10;
+  final int _itemsPerPage = 8;
 
   @override
   void initState() {
@@ -49,6 +49,9 @@ class _ManageReviewsScreenState extends State<ManageReviewsScreen> {
             const SizedBox(height: 16),
             _buildSearchBox(),
             const SizedBox(height: 16),
+            if (_controller.reviewErrorMessage != null) _buildErrorBox(),
+            if (_controller.reviewErrorMessage != null)
+              const SizedBox(height: 12),
             Expanded(child: _buildReviewList()),
           ],
         ),
@@ -57,21 +60,30 @@ class _ManageReviewsScreenState extends State<ManageReviewsScreen> {
   }
 
   Widget _buildHeader() {
-    return const Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        'Danh sách đánh giá',
-        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-      ),
+    return Row(
+      children: [
+        const Expanded(
+          child: Text(
+            'Danh sách đánh giá',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+        ),
+        IconButton(
+          tooltip: 'Tải lại',
+          onPressed: () {
+            setState(() => _currentPage = 1);
+            _controller.loadReviews();
+          },
+          icon: const Icon(Icons.refresh),
+        ),
+      ],
     );
   }
 
   Widget _buildSearchBox() {
     return TextField(
       onChanged: (value) {
-        setState(() {
-          _currentPage = 1;
-        });
+        setState(() => _currentPage = 1);
         _controller.searchReview(value);
       },
       decoration: InputDecoration(
@@ -82,7 +94,27 @@ class _ManageReviewsScreenState extends State<ManageReviewsScreen> {
     );
   }
 
+  Widget _buildErrorBox() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.shade200),
+      ),
+      child: Text(
+        _controller.reviewErrorMessage!,
+        style: const TextStyle(color: Colors.red),
+      ),
+    );
+  }
+
   Widget _buildReviewList() {
+    if (_controller.isLoadingReviews) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     final reviews = _controller.reviews;
     final pagedReviews = _getPagedReviews(reviews);
 
@@ -94,21 +126,20 @@ class _ManageReviewsScreenState extends State<ManageReviewsScreen> {
       children: [
         Expanded(
           child: ListView.separated(
+            padding: EdgeInsets.zero,
             itemCount: pagedReviews.length,
             separatorBuilder: (context, index) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              return _buildReviewCard(pagedReviews[index]);
-            },
+            itemBuilder: (context, index) =>
+                _buildReviewCard(pagedReviews[index]),
           ),
         ),
+        const SizedBox(height: 8),
         AdminPagination(
           currentPage: _currentPage,
           totalItems: reviews.length,
           itemsPerPage: _itemsPerPage,
           onPageChanged: (page) {
-            setState(() {
-              _currentPage = page;
-            });
+            setState(() => _currentPage = page);
           },
         ),
       ],
@@ -131,6 +162,7 @@ class _ManageReviewsScreenState extends State<ManageReviewsScreen> {
 
   Widget _buildReviewCard(AdminReview review) {
     return Card(
+      margin: EdgeInsets.zero,
       elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -139,9 +171,15 @@ class _ManageReviewsScreenState extends State<ManageReviewsScreen> {
           children: [
             _buildReviewTop(review),
             const SizedBox(height: 8),
-            Text('Khách hàng: ${review.customerName}'),
-            Text('Sản phẩm: ${review.productName}'),
-            Text('Ngày đánh giá: ${review.createdAt}'),
+            Wrap(
+              spacing: 24,
+              runSpacing: 8,
+              children: [
+                Text('Khách hàng: ${review.customerName}'),
+                Text('Sản phẩm: ${review.productName}'),
+                Text('Ngày đánh giá: ${review.createdAt}'),
+              ],
+            ),
             const SizedBox(height: 8),
             _buildRating(review.rating),
             const SizedBox(height: 8),
@@ -151,8 +189,21 @@ class _ManageReviewsScreenState extends State<ManageReviewsScreen> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton.icon(
-                  onPressed: () {
-                    _controller.toggleReviewVisibility(review.id);
+                  onPressed: () async {
+                    final success = await _controller.toggleReviewVisibility(
+                      review.id,
+                    );
+
+                    if (!mounted) {
+                      return;
+                    }
+
+                    _showSnackBar(
+                      success
+                          ? 'Cập nhật trạng thái đánh giá thành công'
+                          : (_controller.reviewErrorMessage ??
+                                'Thao tác thất bại'),
+                    );
                   },
                   icon: Icon(
                     review.isVisible ? Icons.visibility_off : Icons.visibility,
@@ -162,7 +213,7 @@ class _ManageReviewsScreenState extends State<ManageReviewsScreen> {
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
                   onPressed: () => _confirmDeleteReview(review),
-                  icon: const Icon(Icons.delete),
+                  icon: const Icon(Icons.delete_forever),
                   label: const Text('Xóa'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
@@ -230,7 +281,7 @@ class _ManageReviewsScreenState extends State<ManageReviewsScreen> {
   void _confirmDeleteReview(AdminReview review) {
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Xác nhận xóa'),
           content: Text(
@@ -238,23 +289,46 @@ class _ManageReviewsScreenState extends State<ManageReviewsScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(dialogContext),
               child: const Text('Hủy'),
             ),
-            ElevatedButton(
-              onPressed: () {
-                _controller.deleteReview(review.id);
-                Navigator.pop(context);
+            ElevatedButton.icon(
+              onPressed: () async {
+                final success = await _controller.deleteReview(review.id);
+
+                if (!mounted) {
+                  return;
+                }
+
+                if (success) {
+                  Navigator.pop(dialogContext);
+                  _showSnackBar('Đã xóa đánh giá');
+                } else {
+                  _showSnackBar(
+                    _controller.reviewErrorMessage ?? 'Xóa thất bại',
+                  );
+                }
               },
+              icon: const Icon(Icons.delete_forever),
+              label: const Text('Xóa'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Xóa'),
             ),
           ],
         );
       },
     );
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }

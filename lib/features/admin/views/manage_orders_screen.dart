@@ -15,7 +15,7 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
   late final AdminOrderController _controller;
 
   int _currentPage = 1;
-  final int _itemsPerPage = 10;
+  final int _itemsPerPage = 8;
 
   @override
   void initState() {
@@ -49,6 +49,9 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
             const SizedBox(height: 16),
             _buildFilterBar(),
             const SizedBox(height: 16),
+            if (_controller.orderErrorMessage != null) _buildErrorBox(),
+            if (_controller.orderErrorMessage != null)
+              const SizedBox(height: 12),
             Expanded(child: _buildOrderList()),
           ],
         ),
@@ -57,12 +60,23 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
   }
 
   Widget _buildHeader() {
-    return const Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        'Danh sách đơn hàng',
-        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-      ),
+    return Row(
+      children: [
+        const Expanded(
+          child: Text(
+            'Danh sách đơn hàng',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+        ),
+        IconButton(
+          tooltip: 'Tải lại',
+          onPressed: () {
+            setState(() => _currentPage = 1);
+            _controller.loadOrders();
+          },
+          icon: const Icon(Icons.refresh),
+        ),
+      ],
     );
   }
 
@@ -93,9 +107,7 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
   Widget _buildSearchBox() {
     return TextField(
       onChanged: (value) {
-        setState(() {
-          _currentPage = 1;
-        });
+        setState(() => _currentPage = 1);
         _controller.searchOrder(value);
       },
       decoration: InputDecoration(
@@ -118,16 +130,34 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
       }).toList(),
       onChanged: (value) {
         if (value != null) {
-          setState(() {
-            _currentPage = 1;
-          });
+          setState(() => _currentPage = 1);
           _controller.filterOrderStatus(value);
         }
       },
     );
   }
 
+  Widget _buildErrorBox() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.shade200),
+      ),
+      child: Text(
+        _controller.orderErrorMessage!,
+        style: const TextStyle(color: Colors.red),
+      ),
+    );
+  }
+
   Widget _buildOrderList() {
+    if (_controller.isLoadingOrders) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     final orders = _controller.orders;
     final pagedOrders = _getPagedOrders(orders);
 
@@ -139,21 +169,20 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
       children: [
         Expanded(
           child: ListView.separated(
+            padding: EdgeInsets.zero,
             itemCount: pagedOrders.length,
             separatorBuilder: (context, index) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              return _buildOrderCard(pagedOrders[index]);
-            },
+            itemBuilder: (context, index) =>
+                _buildOrderCard(pagedOrders[index]),
           ),
         ),
+        const SizedBox(height: 8),
         AdminPagination(
           currentPage: _currentPage,
           totalItems: orders.length,
           itemsPerPage: _itemsPerPage,
           onPageChanged: (page) {
-            setState(() {
-              _currentPage = page;
-            });
+            setState(() => _currentPage = page);
           },
         ),
       ],
@@ -176,6 +205,7 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
 
   Widget _buildOrderCard(AdminOrder order) {
     return Card(
+      margin: EdgeInsets.zero,
       elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -184,10 +214,17 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
           children: [
             _buildOrderTop(order),
             const Divider(height: 24),
-            Text('Khách hàng: ${order.customerName}'),
-            Text('Số điện thoại: ${order.phone}'),
+            Wrap(
+              spacing: 24,
+              runSpacing: 8,
+              children: [
+                Text('Khách hàng: ${order.customerName}'),
+                Text('Số điện thoại: ${order.phone}'),
+                Text('Ngày đặt: ${order.createdAt}'),
+              ],
+            ),
+            const SizedBox(height: 8),
             Text('Địa chỉ: ${order.address}'),
-            Text('Ngày đặt: ${order.createdAt}'),
             const SizedBox(height: 8),
             Text(
               'Tổng tiền: ${_controller.formatCurrency(order.totalAmount)}',
@@ -236,6 +273,10 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
   }
 
   Widget _buildOrderItems(List<AdminOrderItem> items) {
+    if (items.isEmpty) {
+      return const Text('Chưa có chi tiết sản phẩm');
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -298,7 +339,7 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
         return AlertDialog(
           title: Text('Chi tiết đơn hàng ${order.id}'),
           content: SizedBox(
-            width: 500,
+            width: 560,
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -332,11 +373,11 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
   }
 
   void _showUpdateStatusDialog(AdminOrder order) {
-    String selectedStatus = order.status;
+    String selectedStatus = _normalizeStatus(order.status);
 
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           title: Text('Cập nhật trạng thái ${order.id}'),
           content: StatefulBuilder(
@@ -352,9 +393,7 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
                 }).toList(),
                 onChanged: (value) {
                   if (value != null) {
-                    setDialogState(() {
-                      selectedStatus = value;
-                    });
+                    setDialogState(() => selectedStatus = value);
                   }
                 },
               );
@@ -362,13 +401,28 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(dialogContext),
               child: const Text('Hủy'),
             ),
             ElevatedButton(
-              onPressed: () {
-                _controller.updateOrderStatus(order.id, selectedStatus);
-                Navigator.pop(context);
+              onPressed: () async {
+                final success = await _controller.updateOrderStatus(
+                  order.id,
+                  selectedStatus,
+                );
+
+                if (!mounted) {
+                  return;
+                }
+
+                if (success) {
+                  Navigator.pop(dialogContext);
+                  _showSnackBar('Cập nhật trạng thái thành công');
+                } else {
+                  _showSnackBar(
+                    _controller.orderErrorMessage ?? 'Cập nhật thất bại',
+                  );
+                }
               },
               child: const Text('Lưu'),
             ),
@@ -376,5 +430,23 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
         );
       },
     );
+  }
+
+  String _normalizeStatus(String status) {
+    if (_controller.orderStatuses.contains(status)) {
+      return status;
+    }
+
+    return 'Chờ xác nhận';
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
