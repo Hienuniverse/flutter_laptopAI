@@ -162,11 +162,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
           padding: EdgeInsets.symmetric(
             horizontal: isWeb ? screenWidth * 0.1 : 16,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: ListView(
+            physics: const BouncingScrollPhysics(),
             children: [
               _searchBox(),
               const SizedBox(height: 18),
+
               Center(
                 child: RichText(
                   text: const TextSpan(
@@ -198,23 +199,35 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 18),
-              Expanded(
-                child: laptops.isEmpty
-                    ? const Center(
-                  child: Text(
-                    'Không tìm thấy sản phẩm phù hợp',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 15,
+
+              const SizedBox(height: 22),
+
+              _sectionTitle(
+                title: 'Danh sách sản phẩm',
+                subtitle: 'Danh sách laptop hiện có trong hệ thống',
+                icon: Icons.laptop_chromebook,
+              ),
+              const SizedBox(height: 14),
+
+              if (laptops.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.only(top: 80),
+                  child: Center(
+                    child: Text(
+                      'Không tìm thấy sản phẩm phù hợp',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 15,
+                      ),
                     ),
                   ),
                 )
-                    : GridView.builder(
-                  physics: const BouncingScrollPhysics(),
+              else
+                GridView.builder(
+                  physics: const NeverScrollableScrollPhysics(),
+                  shrinkWrap: true,
                   itemCount: laptops.length,
-                  gridDelegate:
-                  SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: isWeb ? 4 : 2,
                     mainAxisSpacing: 16,
                     crossAxisSpacing: 16,
@@ -229,7 +242,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     );
                   },
                 ),
-              ),
+
+              const SizedBox(height: 90),
             ],
           ),
         ),
@@ -270,6 +284,58 @@ class _ProductListScreenState extends State<ProductListScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _sectionTitle({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: const Color(0xFF102A45),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: const Color(0xFF00A3E0).withAlpha(130),
+            ),
+          ),
+          child: Icon(
+            icon,
+            color: const Color(0xFF5CE1E6),
+            size: 18,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  color: Colors.white.withAlpha(115),
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -350,29 +416,33 @@ class _ProductListScreenState extends State<ProductListScreen> {
           Positioned(
             top: 8,
             right: 8,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 4,
-              ),
-              decoration: BoxDecoration(
-                color: const Color(0xFF102A45),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: const Color(0xFF00A3E0).withAlpha(150),
-                ),
-              ),
-              child: Text(
-                'AI Score: ${laptop.aiScore}',
-                style: const TextStyle(
-                  color: Color(0xFF5CE1E6),
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+            child: _aiScoreBadge(laptop.aiScore),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _aiScoreBadge(int score) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 4,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFF102A45),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF00A3E0).withAlpha(150),
+        ),
+      ),
+      child: Text(
+        'AI Score: $score',
+        style: const TextStyle(
+          color: Color(0xFF5CE1E6),
+          fontSize: 9,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }

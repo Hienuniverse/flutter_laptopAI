@@ -7,7 +7,9 @@ Future<void> main() async {
 
   // ⚡ Dán chính xác 2 chuỗi bạn vừa lấy vào đây:
   await Supabase.initialize(
-     // 🔗 Đường link lấy từ mục General Settings
+    url: 'https://twswetznypblkttdusic.supabase.co',
+    anonKey: 'sb_publishable_JqpParGh-m3hubkRCEqRmA_jmY9YTnI',
+    // 🔗 Đường link lấy từ mục General Settings
      // 🔑 Chuỗi lấy từ mục Publishable key
   );
 

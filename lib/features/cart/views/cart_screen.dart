@@ -3,8 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:flutter_laptop_ai/routes/app_routes.dart';
 import '../controllers/cart_controller.dart';
-import '../../orders/controllers/order_controller.dart';
-import '../../orders/views/order_history_screen.dart';
+import '../../orders/views/checkout_screen.dart';
 
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
@@ -33,7 +32,7 @@ class CartScreen extends StatelessWidget {
             ),
           ),
           content: Text(
-            'Vui lòng đăng nhập để tiếp tục đặt hàng.',
+            'Vui lòng đăng nhập để tiếp tục thanh toán.',
             style: TextStyle(
               color: Colors.white.withAlpha(150),
             ),
@@ -65,7 +64,7 @@ class CartScreen extends StatelessWidget {
     );
   }
 
-  void _checkout(BuildContext context, CartController cartController) {
+  void _goToCheckout(BuildContext context) {
     final currentUser = Supabase.instance.client.auth.currentUser;
 
     if (currentUser == null) {
@@ -73,27 +72,10 @@ class CartScreen extends StatelessWidget {
       return;
     }
 
-    OrderController.instance.createOrder(
-      cartItems: cartController.items,
-      totalPrice: cartController.totalPrice,
-    );
-
-    cartController.clearCart();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        backgroundColor: Color(0xFF102A45),
-        content: Text(
-          'Đặt hàng thành công',
-          style: TextStyle(color: Colors.white),
-        ),
-      ),
-    );
-
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => const OrderHistoryScreen(),
+        builder: (_) => const CheckoutScreen(),
       ),
     );
   }
@@ -140,7 +122,9 @@ class CartScreen extends StatelessWidget {
                     final item = cartController.items[index];
                     final laptop = item.laptop;
 
-                    if (laptop == null) return const SizedBox.shrink();
+                    if (laptop == null) {
+                      return const SizedBox.shrink();
+                    }
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
@@ -337,10 +321,10 @@ class CartScreen extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () {
-                _checkout(context, cartController);
+                _goToCheckout(context);
               },
               icon: const Icon(Icons.payment),
-              label: const Text('Đặt hàng'),
+              label: const Text('Thanh toán'),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 backgroundColor: const Color(0xFF00A3E0),
