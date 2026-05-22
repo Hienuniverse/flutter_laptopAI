@@ -1,66 +1,22 @@
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class AdminCategory {
-  final String id;
-  final String name;
-  final String description;
-  final int productCount;
-
-  const AdminCategory({
-    required this.id,
-    required this.name,
-    required this.description,
-    required this.productCount,
-  });
-
-  AdminCategory copyWith({
-    String? id,
-    String? name,
-    String? description,
-    int? productCount,
-  }) {
-    return AdminCategory(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      description: description ?? this.description,
-      productCount: productCount ?? this.productCount,
-    );
-  }
-}
+import '../../../data/models/category_model.dart';
 
 class AdminCategoryController extends ChangeNotifier {
-  final List<AdminCategory> _categories = [
-    const AdminCategory(
-      id: 'CAT001',
-      name: 'Laptop văn phòng',
-      description: 'Laptop phục vụ học tập, làm việc văn phòng',
-      productCount: 24,
-    ),
-    const AdminCategory(
-      id: 'CAT002',
-      name: 'Laptop gaming',
-      description: 'Laptop cấu hình cao dành cho game và đồ họa',
-      productCount: 18,
-    ),
-    const AdminCategory(
-      id: 'CAT003',
-      name: 'Laptop đồ họa',
-      description: 'Laptop dành cho thiết kế, render, dựng video',
-      productCount: 12,
-    ),
-    const AdminCategory(
-      id: 'CAT004',
-      name: 'MacBook',
-      description: 'Dòng laptop Apple MacBook',
-      productCount: 9,
-    ),
-  ];
+  final SupabaseClient _client = Supabase.instance.client;
 
+  final List<CategoryModel> _categories = [];
+
+  bool _isLoading = false;
+  String? _errorMessage;
   String _keyword = '';
 
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
   String get keyword => _keyword;
 
-  List<AdminCategory> get categories {
+  List<CategoryModel> get categories {
     if (_keyword.trim().isEmpty) {
       return List.unmodifiable(_categories);
     }
@@ -68,9 +24,37 @@ class AdminCategoryController extends ChangeNotifier {
     final lowerKeyword = _keyword.toLowerCase();
 
     return _categories.where((category) {
-      return category.name.toLowerCase().contains(lowerKeyword) ||
-          category.description.toLowerCase().contains(lowerKeyword);
+      return category.tenDM.toLowerCase().contains(lowerKeyword) ||
+          (category.moTa ?? '').toLowerCase().contains(lowerKeyword);
     }).toList();
+  }
+
+  AdminCategoryController() {
+    loadCategories();
+  }
+
+  Future<void> loadCategories() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final data = await _client
+          .from('danhmuc')
+          .select()
+          .order('madm', ascending: true);
+
+      _categories
+        ..clear()
+        ..addAll(
+          data.map((item) => CategoryModel.fromJson(item as Map)).toList(),
+        );
+    } catch (e) {
+      _errorMessage = 'Không thể tải danh mục: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   void searchCategory(String keyword) {
@@ -78,27 +62,66 @@ class AdminCategoryController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addCategory(AdminCategory category) {
-    _categories.add(category);
-    notifyListeners();
-  }
+  Future<void> addCategory({
+    required String tenDM,
+    String? moTa,
+    String? slug,
+    String icon = 'FolderTree',
+    String colorClass = 'cyan',
+  }) async {
+    try {
+      await _client.from('danhmuc').insert({
+        'tendm': tenDM,
+        'mota': moTa,
+        'slug': slug,
+        'icon': icon,
+        'colorclass': colorClass,
+        'trangthai': true,
+      });
 
-  void updateCategory(AdminCategory category) {
-    final index = _categories.indexWhere((item) => item.id == category.id);
-
-    if (index != -1) {
-      _categories[index] = category;
+      await loadCategories();
+    } catch (e) {
+      _errorMessage = 'Không thể thêm danh mục: $e';
       notifyListeners();
     }
   }
 
-  void deleteCategory(String id) {
-    _categories.removeWhere((category) => category.id == id);
-    notifyListeners();
+  Future<void> updateCategory({
+    required int maDM,
+    required String tenDM,
+    String? moTa,
+    String? slug,
+    String icon = 'FolderTree',
+    String colorClass = 'cyan',
+    bool trangThai = true,
+  }) async {
+    try {
+      await _client.from('danhmuc').update({
+        'tendm': tenDM,
+        'mota': moTa,
+        'slug': slug,
+        'icon': icon,
+        'colorclass': colorClass,
+        'trangthai': trangThai,
+      }).eq('madm', maDM);
+
+      await loadCategories();
+    } catch (e) {
+      _errorMessage = 'Không thể cập nhật danh mục: $e';
+      notifyListeners();
+    }
   }
 
-  String generateCategoryId() {
-    final nextNumber = _categories.length + 1;
-    return 'CAT${nextNumber.toString().padLeft(3, '0')}';
+  Future<void> deleteCategory(int maDM) async {
+    try {
+      await _client.from('danhmuc').update({
+        'trangthai': false,
+      }).eq('madm', maDM);
+
+      await loadCategories();
+    } catch (e) {
+      _errorMessage = 'Không thể xóa danh mục: $e';
+      notifyListeners();
+    }
   }
 }

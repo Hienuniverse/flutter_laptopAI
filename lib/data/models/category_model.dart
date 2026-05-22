@@ -5,6 +5,7 @@ class CategoryModel {
   final String? slug;
   final String icon;
   final String colorClass;
+  final bool trangThai;
 
   CategoryModel({
     this.maDM,
@@ -13,16 +14,38 @@ class CategoryModel {
     this.slug,
     this.icon = 'FolderTree',
     this.colorClass = 'cyan',
+    this.trangThai = true,
   });
 
-  factory CategoryModel.fromJson(Map<String, dynamic> json) {
+  int? get id => maDM;
+  String get name => tenDM;
+  String get description => moTa ?? '';
+
+  factory CategoryModel.fromJson(Map json) {
     return CategoryModel(
-      maDM: json['MaDM'] ?? json['maDM'],
-      tenDM: json['TenDM'] ?? json['tenDM'] ?? '',
-      moTa: json['MoTa'] ?? json['moTa'],
+      maDM: json['MaDM'] ?? json['maDM'] ?? json['madm'],
+      tenDM: json['TenDM'] ?? json['tenDM'] ?? json['tendm'] ?? '',
+      moTa: json['MoTa'] ?? json['moTa'] ?? json['mota'],
       slug: json['Slug'] ?? json['slug'],
       icon: json['Icon'] ?? json['icon'] ?? 'FolderTree',
       colorClass: json['ColorClass'] ?? json['colorClass'] ?? 'cyan',
+      trangThai: json['TrangThai'] == true ||
+          json['trangThai'] == true ||
+          json['trangthai'] == true ||
+          json['trangthai'] == 1 ||
+          json['TrangThai'] == 1,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (maDM != null) 'madm': maDM,
+      'tendm': tenDM,
+      'mota': moTa,
+      'slug': slug,
+      'icon': icon,
+      'colorclass': colorClass,
+      'trangthai': trangThai,
+    };
   }
 }
