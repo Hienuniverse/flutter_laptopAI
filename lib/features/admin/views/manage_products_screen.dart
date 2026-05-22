@@ -198,7 +198,7 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: DataTable(
-              columnSpacing: 28,
+              columnSpacing: 70,
               headingRowHeight: 56,
               dataRowMinHeight: 52,
               dataRowMaxHeight: 52,
