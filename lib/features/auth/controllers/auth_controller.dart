@@ -7,15 +7,20 @@ import '../../../../routes/app_routes.dart';
 class AuthController {
   final SupabaseClient _client = Supabase.instance.client;
 
-  Future<void> saveUserSession(User user) async {
+  Future<void> saveUserSession({
+    required User user,
+    required String role,
+    int? maTK,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
 
     await prefs.setString('userId', user.id);
     await prefs.setString('email', user.email ?? '');
-    await prefs.setString(
-      'vaiTro',
-      user.userMetadata?['role'] ?? 'Customer',
-    );
+    await prefs.setString('vaiTro', role);
+
+    if (maTK != null) {
+      await prefs.setInt('maTK', maTK);
+    }
   }
 
   Future<void> handleLogin(
@@ -40,14 +45,27 @@ class AuthController {
 
       if (!context.mounted) return;
 
-      if (user == null) {
+      if (user == null || user.email == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Đăng nhập thất bại')),
         );
         return;
       }
 
-      await saveUserSession(user);
+      final account = await _client
+          .from('taikhoan')
+          .select()
+          .eq('email', user.email!)
+          .maybeSingle();
+
+      final String role = account?['vaitro']?.toString() ?? 'Customer';
+      final int? maTK = account?['matk'] is int ? account!['matk'] as int : null;
+
+      await saveUserSession(
+        user: user,
+        role: role,
+        maTK: maTK,
+      );
 
       if (!context.mounted) return;
 
@@ -55,9 +73,7 @@ class AuthController {
         const SnackBar(content: Text('Đăng nhập thành công!')),
       );
 
-      final role = user.userMetadata?['role'] ?? 'Customer';
-
-      if (role == 'Admin') {
+      if (role.toLowerCase() == 'admin') {
         Navigator.pushReplacementNamed(context, AppRoutes.adminDashboard);
       } else {
         Navigator.pushReplacementNamed(context, AppRoutes.home);
