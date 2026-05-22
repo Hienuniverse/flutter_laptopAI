@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:flutter_laptop_ai/data/models/laptop_model.dart';
 import 'package:flutter_laptop_ai/features/cart/controllers/cart_controller.dart';
+import 'package:flutter_laptop_ai/features/comment/views/comment_screen.dart';
 import 'package:flutter_laptop_ai/routes/app_routes.dart';
 
 class ProductDetailScreen extends StatelessWidget {
@@ -90,6 +91,26 @@ class ProductDetailScreen extends StatelessWidget {
     );
   }
 
+  void _openReviewScreen(BuildContext context) {
+    final currentUser = Supabase.instance.client.auth.currentUser;
+
+    if (currentUser == null) {
+      _showLoginRequiredDialog(context);
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CommentScreen(
+          maSP: laptop.maSP ?? 0,
+          maTK: 1,
+          tenSP: laptop.tenSP,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -117,11 +138,18 @@ class ProductDetailScreen extends StatelessWidget {
             children: [
               _imageSection(),
               const SizedBox(height: 16),
+
               _infoSection(),
               const SizedBox(height: 16),
+
               _specSection(),
               const SizedBox(height: 16),
+
               _descriptionSection(),
+              const SizedBox(height: 16),
+
+              _reviewButton(context),
+
               const SizedBox(height: 80),
             ],
           ),
@@ -208,6 +236,7 @@ class ProductDetailScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
+
           Text(
             _formatPrice(laptop.giaBan),
             style: const TextStyle(
@@ -216,19 +245,25 @@ class ProductDetailScreen extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
+
           const SizedBox(height: 14),
+
           _infoRow(
             icon: Icons.business,
             title: 'Thương hiệu',
             value: laptop.brand,
           ),
+
           const SizedBox(height: 8),
+
           _infoRow(
             icon: Icons.category_outlined,
             title: 'Danh mục',
             value: laptop.category,
           ),
+
           const SizedBox(height: 8),
+
           _infoRow(
             icon: Icons.inventory_2_outlined,
             title: 'Tồn kho',
@@ -261,12 +296,15 @@ class ProductDetailScreen extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
+
           const SizedBox(height: 14),
+
           _specItem('CPU', laptop.cpu ?? 'Đang cập nhật'),
           _specItem('RAM', laptop.ram ?? 'Đang cập nhật'),
           _specItem('Ổ cứng', laptop.oCung ?? 'Đang cập nhật'),
           _specItem('GPU', laptop.vga ?? 'Đang cập nhật'),
           _specItem('Màn hình', laptop.manHinh ?? 'Đang cập nhật'),
+
           _specItem(
             'Trọng lượng',
             laptop.trongLuong != null
@@ -300,7 +338,9 @@ class ProductDetailScreen extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
+
           const SizedBox(height: 10),
+
           Text(
             laptop.moTa?.isNotEmpty == true
                 ? laptop.moTa!
@@ -312,6 +352,31 @@ class ProductDetailScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _reviewButton(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () {
+          _openReviewScreen(context);
+        },
+        icon: const Icon(Icons.star_rate_rounded),
+        label: const Text('Xem / Viết đánh giá'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF5CE1E6),
+          foregroundColor: const Color(0xFF030A16),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }
@@ -367,6 +432,7 @@ class ProductDetailScreen extends StatelessWidget {
           size: 18,
         ),
         const SizedBox(width: 8),
+
         Text(
           '$title: ',
           style: const TextStyle(
@@ -374,6 +440,7 @@ class ProductDetailScreen extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
+
         Expanded(
           child: Text(
             value,
@@ -403,6 +470,7 @@ class ProductDetailScreen extends StatelessWidget {
               ),
             ),
           ),
+
           Expanded(
             child: Text(
               value,
