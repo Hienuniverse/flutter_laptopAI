@@ -13,7 +13,6 @@ class ProductListScreen extends StatefulWidget {
 
 class _ProductListScreenState extends State<ProductListScreen> {
   final TextEditingController _searchController = TextEditingController();
-
   final SupabaseClient _client = Supabase.instance.client;
 
   final List<LaptopModel> _laptops = [];
@@ -22,10 +21,19 @@ class _ProductListScreenState extends State<ProductListScreen> {
   String? _errorMessage;
   String _keyword = '';
 
+  int _currentPage = 1;
+  static const int _itemsPerPage = 6;
+
   @override
   void initState() {
     super.initState();
     _loadProducts();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadProducts() async {
@@ -48,6 +56,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
         _laptops
           ..clear()
           ..addAll(products);
+        _currentPage = 1;
       });
     } catch (e) {
       setState(() {
@@ -75,6 +84,23 @@ class _ProductListScreenState extends State<ProductListScreen> {
           (laptop.oCung ?? '').toLowerCase().contains(keyword) ||
           (laptop.manHinh ?? '').toLowerCase().contains(keyword);
     }).toList();
+  }
+
+  List<LaptopModel> _pagedLaptops(List<LaptopModel> source) {
+    final startIndex = (_currentPage - 1) * _itemsPerPage;
+    final endIndex = startIndex + _itemsPerPage;
+
+    if (startIndex >= source.length) return [];
+
+    return source.sublist(
+      startIndex,
+      endIndex > source.length ? source.length : endIndex,
+    );
+  }
+
+  int _totalPages(int totalItems) {
+    if (totalItems == 0) return 1;
+    return (totalItems / _itemsPerPage).ceil();
   }
 
   String _formatPrice(double price) {
@@ -107,14 +133,33 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   void _refreshProducts() {
     _searchController.clear();
-    _keyword = '';
+    setState(() {
+      _keyword = '';
+      _currentPage = 1;
+    });
     _loadProducts();
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  void _goToPreviousPage() {
+    if (_currentPage <= 1) return;
+
+    setState(() {
+      _currentPage--;
+    });
+  }
+
+  void _goToNextPage(int totalPages) {
+    if (_currentPage >= totalPages) return;
+
+    setState(() {
+      _currentPage++;
+    });
+  }
+
+  void _goToPage(int page) {
+    setState(() {
+      _currentPage = page;
+    });
   }
 
   @override
@@ -183,6 +228,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
       );
     }
 
+    final totalPages = _totalPages(laptops.length);
+
+    if (_currentPage > totalPages) {
+      _currentPage = totalPages;
+    }
+
+    final pagedLaptops = _pagedLaptops(laptops);
+
     return RefreshIndicator(
       onRefresh: _loadProducts,
       color: const Color(0xFF5CE1E6),
@@ -213,7 +266,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
               ),
             ),
           ),
+
           const SizedBox(height: 6),
+
           Center(
             child: Text(
               'Hiển thị sản phẩm trực tiếp từ cơ sở dữ liệu Supabase',
@@ -229,9 +284,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
           _sectionTitle(
             title: 'Danh sách sản phẩm',
-            subtitle: 'Tổng cộng ${laptops.length} sản phẩm đang hiển thị',
+            subtitle:
+            'Tổng cộng ${laptops.length} sản phẩm • Trang $_currentPage/$totalPages',
             icon: Icons.laptop_chromebook,
           ),
+
           const SizedBox(height: 14),
 
           if (laptops.isEmpty)
@@ -247,19 +304,19 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 ),
               ),
             )
-          else
+          else ...[
             GridView.builder(
               physics: const NeverScrollableScrollPhysics(),
               shrinkWrap: true,
-              itemCount: laptops.length,
+              itemCount: pagedLaptops.length,
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: isWeb ? 4 : 2,
+                crossAxisCount: isWeb ? 3 : 2,
                 mainAxisSpacing: 16,
                 crossAxisSpacing: 16,
-                childAspectRatio: isWeb ? 0.75 : 0.64,
+                childAspectRatio: isWeb ? 0.8 : 0.64,
               ),
               itemBuilder: (context, index) {
-                final laptop = laptops[index];
+                final laptop = pagedLaptops[index];
 
                 return GestureDetector(
                   onTap: () => _goToDetail(laptop),
@@ -268,8 +325,193 @@ class _ProductListScreenState extends State<ProductListScreen> {
               },
             ),
 
+            const SizedBox(height: 22),
+
+            _paginationControls(
+              totalPages: totalPages,
+              totalItems: laptops.length,
+            ),
+          ],
+
           const SizedBox(height: 90),
         ],
+      ),
+    );
+  }
+
+  Widget _paginationControls({
+    required int totalPages,
+    required int totalItems,
+  }) {
+    final canPrevious = _currentPage > 1;
+    final canNext = _currentPage < totalPages;
+
+    final startItem = totalItems == 0
+        ? 0
+        : ((_currentPage - 1) * _itemsPerPage) + 1;
+
+    final endItem = (_currentPage * _itemsPerPage) > totalItems
+        ? totalItems
+        : _currentPage * _itemsPerPage;
+
+    return Column(
+      children: [
+        Text(
+          'Hiển thị $startItem - $endItem / $totalItems sản phẩm',
+          style: TextStyle(
+            color: Colors.white.withAlpha(130),
+            fontSize: 12,
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _pageButton(
+              icon: Icons.chevron_left,
+              label: 'Trước',
+              enabled: canPrevious,
+              onTap: _goToPreviousPage,
+            ),
+
+            const SizedBox(width: 8),
+
+            ...List.generate(totalPages, (index) {
+              final page = index + 1;
+
+              if (totalPages > 5) {
+                if (page != 1 &&
+                    page != totalPages &&
+                    (page < _currentPage - 1 ||
+                        page > _currentPage + 1)) {
+                  if (page == 2 && _currentPage > 3) {
+                    return _dotPage();
+                  }
+
+                  if (page == totalPages - 1 &&
+                      _currentPage < totalPages - 2) {
+                    return _dotPage();
+                  }
+
+                  return const SizedBox.shrink();
+                }
+              }
+
+              return _numberPageButton(page);
+            }),
+
+            const SizedBox(width: 8),
+
+            _pageButton(
+              icon: Icons.chevron_right,
+              label: 'Sau',
+              enabled: canNext,
+              onTap: () => _goToNextPage(totalPages),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _pageButton({
+    required IconData icon,
+    required String label,
+    required bool enabled,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: enabled ? onTap : null,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 10,
+          vertical: 9,
+        ),
+        decoration: BoxDecoration(
+          color: enabled
+              ? const Color(0xFF102A45)
+              : const Color(0xFF0B1528),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: enabled
+                ? const Color(0xFF00A3E0).withAlpha(140)
+                : Colors.white.withAlpha(15),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: enabled
+                  ? const Color(0xFF5CE1E6)
+                  : Colors.white24,
+              size: 18,
+            ),
+            Text(
+              label,
+              style: TextStyle(
+                color: enabled
+                    ? const Color(0xFF5CE1E6)
+                    : Colors.white24,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _numberPageButton(int page) {
+    final bool isActive = page == _currentPage;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 3),
+      child: InkWell(
+        onTap: () => _goToPage(page),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: 34,
+          height: 34,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isActive
+                ? const Color(0xFF00A3E0)
+                : const Color(0xFF102A45),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isActive
+                  ? const Color(0xFF5CE1E6)
+                  : Colors.white.withAlpha(20),
+            ),
+          ),
+          child: Text(
+            '$page',
+            style: TextStyle(
+              color: isActive ? Colors.white : const Color(0xFF5CE1E6),
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _dotPage() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 5),
+      child: Text(
+        '...',
+        style: TextStyle(
+          color: Colors.white.withAlpha(120),
+          fontSize: 15,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -292,6 +534,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
         onChanged: (value) {
           setState(() {
             _keyword = value;
+            _currentPage = 1;
           });
         },
         decoration: InputDecoration(
@@ -305,6 +548,22 @@ class _ProductListScreenState extends State<ProductListScreen> {
             Icons.search,
             color: Color(0xFF5CE1E6),
           ),
+          suffixIcon: _keyword.isNotEmpty
+              ? IconButton(
+            onPressed: () {
+              _searchController.clear();
+
+              setState(() {
+                _keyword = '';
+                _currentPage = 1;
+              });
+            },
+            icon: const Icon(
+              Icons.close,
+              color: Colors.white70,
+            ),
+          )
+              : null,
         ),
       ),
     );
@@ -462,7 +721,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
         ),
       ),
       child: Text(
-        'AI Score: $score',
+        score > 0 ? 'AI Score: $score' : 'AI Score: --',
         style: const TextStyle(
           color: Color(0xFF5CE1E6),
           fontSize: 9,
