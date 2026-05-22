@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../data/models/laptop_model.dart';
 import '../../../shared/layouts/admin_layout.dart';
+import '../../../shared/widgets/admin_pagination.dart';
 import '../controllers/admin_product_controller.dart';
 
 class ManageProductsScreen extends StatefulWidget {
@@ -13,6 +14,9 @@ class ManageProductsScreen extends StatefulWidget {
 
 class _ManageProductsScreenState extends State<ManageProductsScreen> {
   late final AdminProductController _controller;
+
+  int _currentPage = 1;
+  final int _itemsPerPage = 10;
 
   @override
   void initState() {
@@ -48,7 +52,9 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
             const SizedBox(height: 16),
             if (_controller.errorMessage != null) _buildErrorBox(),
             if (_controller.errorMessage != null) const SizedBox(height: 12),
-            Expanded(child: _buildProductList()),
+            Expanded(
+              child: _buildProductList(),
+            ),
           ],
         ),
       ),
@@ -61,12 +67,20 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
         const Expanded(
           child: Text(
             'Danh sách laptop',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         IconButton(
           tooltip: 'Tải lại',
-          onPressed: _controller.loadProducts,
+          onPressed: () {
+            setState(() {
+              _currentPage = 1;
+            });
+            _controller.loadProducts();
+          },
           icon: const Icon(Icons.refresh),
         ),
         const SizedBox(width: 8),
@@ -81,11 +95,18 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
 
   Widget _buildSearchBox() {
     return TextField(
-      onChanged: _controller.searchProduct,
+      onChanged: (value) {
+        setState(() {
+          _currentPage = 1;
+        });
+        _controller.searchProduct(value);
+      },
       decoration: InputDecoration(
         hintText: 'Tìm kiếm theo tên, CPU, RAM, ổ cứng, VGA...',
         prefixIcon: const Icon(Icons.search),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
       ),
     );
   }
@@ -108,10 +129,13 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
 
   Widget _buildProductList() {
     if (_controller.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
     }
 
     final products = _controller.products;
+    final pagedProducts = _getPagedProducts(products);
 
     if (products.isEmpty) {
       return const Center(
@@ -119,88 +143,161 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
       );
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth >= 950) {
-          return _buildProductTable(products);
-        }
+    return Column(
+      children: [
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth >= 950) {
+                return _buildProductTable(pagedProducts);
+              }
 
-        return _buildProductCards(products);
-      },
+              return _buildProductCards(pagedProducts);
+            },
+          ),
+        ),
+        const SizedBox(height: 8),
+        AdminPagination(
+          currentPage: _currentPage,
+          totalItems: products.length,
+          itemsPerPage: _itemsPerPage,
+          onPageChanged: (page) {
+            setState(() {
+              _currentPage = page;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  List<LaptopModel> _getPagedProducts(List<LaptopModel> products) {
+    final startIndex = (_currentPage - 1) * _itemsPerPage;
+    final endIndex = startIndex + _itemsPerPage;
+
+    if (startIndex >= products.length) {
+      return [];
+    }
+
+    return products.sublist(
+      startIndex,
+      endIndex > products.length ? products.length : endIndex,
     );
   }
 
   Widget _buildProductTable(List<LaptopModel> products) {
     return Card(
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          columns: const [
-            DataColumn(label: Text('Mã')),
-            DataColumn(label: Text('Tên laptop')),
-            DataColumn(label: Text('Mã hãng')),
-            DataColumn(label: Text('Mã DM')),
-            DataColumn(label: Text('CPU')),
-            DataColumn(label: Text('RAM')),
-            DataColumn(label: Text('Ổ cứng')),
-            DataColumn(label: Text('VGA')),
-            DataColumn(label: Text('Giá')),
-            DataColumn(label: Text('Tồn kho')),
-            DataColumn(label: Text('Trạng thái')),
-            DataColumn(label: Text('Thao tác')),
-          ],
-          rows: products.map((product) {
-            return DataRow(
-              cells: [
-                DataCell(Text(product.maSP?.toString() ?? '')),
-                DataCell(
-                  SizedBox(
-                    width: 220,
-                    child: Text(product.tenSP, overflow: TextOverflow.ellipsis),
-                  ),
-                ),
-                DataCell(Text(product.maHang?.toString() ?? '')),
-                DataCell(Text(product.maDM?.toString() ?? '')),
-                DataCell(Text(product.cpu ?? '')),
-                DataCell(Text(product.ram ?? '')),
-                DataCell(Text(product.oCung ?? '')),
-                DataCell(Text(product.vga ?? '')),
-                DataCell(Text(_controller.formatCurrency(product.giaBan))),
-                DataCell(
-                  Text(
-                    product.soLuongTon.toString(),
-                    style: TextStyle(
-                      color: product.soLuongTon <= 5
-                          ? Colors.red
-                          : Colors.black,
-                      fontWeight: product.soLuongTon <= 5
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                    ),
-                  ),
-                ),
-                DataCell(_buildStatusBadge(product.trangThai)),
-                DataCell(
-                  Row(
-                    children: [
-                      IconButton(
-                        tooltip: 'Sửa',
-                        onPressed: () => _showProductForm(product: product),
-                        icon: const Icon(Icons.edit, color: Colors.blue),
-                      ),
-                      IconButton(
-                        tooltip: 'Xóa',
-                        onPressed: product.maSP == null
-                            ? null
-                            : () => _confirmDeleteProduct(product),
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                      ),
-                    ],
-                  ),
-                ),
+      clipBehavior: Clip.antiAlias,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Scrollbar(
+        thumbVisibility: true,
+        child: SingleChildScrollView(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              columnSpacing: 28,
+              headingRowHeight: 56,
+              dataRowMinHeight: 52,
+              dataRowMaxHeight: 52,
+              columns: const [
+                DataColumn(label: Text('Mã')),
+                DataColumn(label: Text('Tên laptop')),
+                DataColumn(label: Text('Hãng')),
+                DataColumn(label: Text('DM')),
+                DataColumn(label: Text('CPU')),
+                DataColumn(label: Text('RAM')),
+                DataColumn(label: Text('Ổ cứng')),
+                DataColumn(label: Text('Giá')),
+                DataColumn(label: Text('Tồn')),
+                DataColumn(label: Text('TT')),
+                DataColumn(label: Text('')),
               ],
-            );
-          }).toList(),
+              rows: products.map((product) {
+                return DataRow(
+                  cells: [
+                    DataCell(Text(product.maSP?.toString() ?? '')),
+                    DataCell(
+                      SizedBox(
+                        width: 230,
+                        child: Text(
+                          product.tenSP,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    DataCell(Text(product.maHang?.toString() ?? '')),
+                    DataCell(Text(product.maDM?.toString() ?? '')),
+                    DataCell(
+                      SizedBox(
+                        width: 130,
+                        child: Text(
+                          product.cpu ?? '',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    DataCell(Text(product.ram ?? '')),
+                    DataCell(Text(product.oCung ?? '')),
+                    DataCell(Text(_controller.formatCurrency(product.giaBan))),
+                    DataCell(
+                      Text(
+                        product.soLuongTon.toString(),
+                        style: TextStyle(
+                          color: product.soLuongTon <= 5
+                              ? Colors.red
+                              : Colors.black,
+                          fontWeight: product.soLuongTon <= 5
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                    DataCell(_buildStatusBadge(product.trangThai)),
+                    DataCell(
+                      PopupMenuButton<String>(
+                        tooltip: 'Thao tác',
+                        icon: const Icon(Icons.more_vert),
+                        onSelected: (value) {
+                          if (value == 'edit') {
+                            _showProductForm(product: product);
+                          }
+
+                          if (value == 'delete') {
+                            _confirmDeleteProduct(product);
+                          }
+                        },
+                        itemBuilder: (context) => const [
+                          PopupMenuItem(
+                            value: 'edit',
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit, color: Colors.blue),
+                                SizedBox(width: 8),
+                                Text('Sửa'),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete_forever, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text('Xóa vĩnh viễn'),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
         ),
       ),
     );
@@ -208,12 +305,14 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
 
   Widget _buildProductCards(List<LaptopModel> products) {
     return ListView.separated(
+      padding: EdgeInsets.zero,
       itemCount: products.length,
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final product = products[index];
 
         return Card(
+          margin: EdgeInsets.zero,
           elevation: 2,
           child: Padding(
             padding: const EdgeInsets.all(14),
@@ -247,7 +346,7 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
                 Text(
                   'Tồn kho: ${product.soLuongTon}',
                   style: TextStyle(
-                    color: product.soLuongTon <= 5 ? Colors.red : Colors.black,
+                    color: product.soLuongTon <= 5 ? Colors.red : null,
                     fontWeight: product.soLuongTon <= 5
                         ? FontWeight.bold
                         : FontWeight.normal,
@@ -266,7 +365,7 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
                       onPressed: product.maSP == null
                           ? null
                           : () => _confirmDeleteProduct(product),
-                      icon: const Icon(Icons.delete),
+                      icon: const Icon(Icons.delete_forever),
                       label: const Text('Xóa'),
                     ),
                   ],
@@ -281,12 +380,12 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
 
   Widget _buildStatusBadge(bool isActive) {
     final color = isActive ? Colors.green : Colors.grey;
-    final text = isActive ? 'Đang bán' : 'Đã ẩn';
+    final text = isActive ? 'Đang bán' : 'Ngưng';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -399,7 +498,11 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
                         ],
                       ),
                       _buildInput(manHinhController, 'Màn hình'),
-                      _buildInput(moTaController, 'Mô tả', maxLines: 3),
+                      _buildInput(
+                        moTaController,
+                        'Mô tả',
+                        maxLines: 3,
+                      ),
                       SwitchListTile(
                         value: trangThai,
                         title: const Text('Đang bán'),
@@ -435,6 +538,8 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
                       return;
                     }
 
+                    bool success;
+
                     if (isEditing) {
                       final maSP = product.maSP;
 
@@ -443,7 +548,7 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
                         return;
                       }
 
-                      await _controller.updateProduct(
+                      success = await _controller.updateProduct(
                         maSP: maSP,
                         tenSP: tenSP,
                         giaBan: giaBan,
@@ -460,7 +565,7 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
                         trangThai: trangThai,
                       );
                     } else {
-                      await _controller.addProduct(
+                      success = await _controller.addProduct(
                         tenSP: tenSP,
                         giaBan: giaBan,
                         soLuongTon: soLuongTon,
@@ -480,12 +585,18 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
                       return;
                     }
 
-                    Navigator.pop(dialogContext);
-                    _showSnackBar(
-                      isEditing
-                          ? 'Cập nhật laptop thành công'
-                          : 'Thêm laptop thành công',
-                    );
+                    if (success) {
+                      Navigator.pop(dialogContext);
+                      _showSnackBar(
+                        isEditing
+                            ? 'Cập nhật laptop thành công'
+                            : 'Thêm laptop thành công',
+                      );
+                    } else {
+                      _showSnackBar(
+                        _controller.errorMessage ?? 'Thao tác thất bại',
+                      );
+                    }
                   },
                   child: Text(isEditing ? 'Cập nhật' : 'Thêm'),
                 ),
@@ -522,14 +633,16 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Xác nhận xóa'),
-          content: Text('Bạn có chắc muốn ẩn laptop "${product.tenSP}" không?'),
+          title: const Text('Xác nhận xóa vĩnh viễn'),
+          content: Text(
+            'Bạn có chắc muốn xóa vĩnh viễn laptop "${product.tenSP}" khỏi database không?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
               child: const Text('Hủy'),
             ),
-            ElevatedButton(
+            ElevatedButton.icon(
               onPressed: () async {
                 final maSP = product.maSP;
 
@@ -538,20 +651,27 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
                   return;
                 }
 
-                await _controller.deleteProduct(maSP);
+                final success = await _controller.deleteProduct(maSP);
 
                 if (!mounted) {
                   return;
                 }
 
-                Navigator.pop(dialogContext);
-                _showSnackBar('Đã ẩn laptop');
+                if (success) {
+                  Navigator.pop(dialogContext);
+                  _showSnackBar('Đã xóa laptop khỏi database');
+                } else {
+                  _showSnackBar(
+                    _controller.errorMessage ?? 'Xóa laptop thất bại',
+                  );
+                }
               },
+              icon: const Icon(Icons.delete_forever),
+              label: const Text('Xóa vĩnh viễn'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Xóa'),
             ),
           ],
         );
@@ -576,8 +696,8 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 }

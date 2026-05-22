@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/layouts/admin_layout.dart';
+import '../../../shared/widgets/admin_pagination.dart';
 import '../controllers/admin_order_controller.dart';
 
 class ManageReviewsScreen extends StatefulWidget {
@@ -12,6 +13,9 @@ class ManageReviewsScreen extends StatefulWidget {
 
 class _ManageReviewsScreenState extends State<ManageReviewsScreen> {
   late final AdminOrderController _controller;
+
+  int _currentPage = 1;
+  final int _itemsPerPage = 10;
 
   @override
   void initState() {
@@ -45,9 +49,7 @@ class _ManageReviewsScreenState extends State<ManageReviewsScreen> {
             const SizedBox(height: 16),
             _buildSearchBox(),
             const SizedBox(height: 16),
-            Expanded(
-              child: _buildReviewList(),
-            ),
+            Expanded(child: _buildReviewList()),
           ],
         ),
       ),
@@ -59,42 +61,71 @@ class _ManageReviewsScreenState extends State<ManageReviewsScreen> {
       alignment: Alignment.centerLeft,
       child: Text(
         'Danh sách đánh giá',
-        style: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-        ),
+        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
       ),
     );
   }
 
   Widget _buildSearchBox() {
     return TextField(
-      onChanged: _controller.searchReview,
+      onChanged: (value) {
+        setState(() {
+          _currentPage = 1;
+        });
+        _controller.searchReview(value);
+      },
       decoration: InputDecoration(
         hintText: 'Tìm kiếm theo khách hàng, sản phẩm, nội dung...',
         prefixIcon: const Icon(Icons.search),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 
   Widget _buildReviewList() {
     final reviews = _controller.reviews;
+    final pagedReviews = _getPagedReviews(reviews);
 
     if (reviews.isEmpty) {
-      return const Center(
-        child: Text('Không tìm thấy đánh giá phù hợp'),
-      );
+      return const Center(child: Text('Không tìm thấy đánh giá phù hợp'));
     }
 
-    return ListView.separated(
-      itemCount: reviews.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        return _buildReviewCard(reviews[index]);
-      },
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.separated(
+            itemCount: pagedReviews.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              return _buildReviewCard(pagedReviews[index]);
+            },
+          ),
+        ),
+        AdminPagination(
+          currentPage: _currentPage,
+          totalItems: reviews.length,
+          itemsPerPage: _itemsPerPage,
+          onPageChanged: (page) {
+            setState(() {
+              _currentPage = page;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  List<AdminReview> _getPagedReviews(List<AdminReview> reviews) {
+    final startIndex = (_currentPage - 1) * _itemsPerPage;
+    final endIndex = startIndex + _itemsPerPage;
+
+    if (startIndex >= reviews.length) {
+      return [];
+    }
+
+    return reviews.sublist(
+      startIndex,
+      endIndex > reviews.length ? reviews.length : endIndex,
     );
   }
 
@@ -114,10 +145,7 @@ class _ManageReviewsScreenState extends State<ManageReviewsScreen> {
             const SizedBox(height: 8),
             _buildRating(review.rating),
             const SizedBox(height: 8),
-            Text(
-              review.comment,
-              style: const TextStyle(fontSize: 15),
-            ),
+            Text(review.comment, style: const TextStyle(fontSize: 15)),
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -155,10 +183,7 @@ class _ManageReviewsScreenState extends State<ManageReviewsScreen> {
         Expanded(
           child: Text(
             review.id,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
         _buildVisibilityBadge(review.isVisible),
@@ -173,7 +198,7 @@ class _ManageReviewsScreenState extends State<ManageReviewsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -190,10 +215,7 @@ class _ManageReviewsScreenState extends State<ManageReviewsScreen> {
   Widget _buildRating(int rating) {
     return Row(
       children: [
-        const Text(
-          'Đánh giá: ',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        const Text('Đánh giá: ', style: TextStyle(fontWeight: FontWeight.bold)),
         ...List.generate(5, (index) {
           return Icon(
             index < rating ? Icons.star : Icons.star_border,

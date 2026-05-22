@@ -17,19 +17,22 @@ class AdminProductController extends ChangeNotifier {
   String get keyword => _keyword;
 
   List<LaptopModel> get products {
-    if (_keyword.trim().isEmpty) {
-      return List.unmodifiable(_products);
+    var result = List<LaptopModel>.from(_products);
+
+    if (_keyword.trim().isNotEmpty) {
+      final lowerKeyword = _keyword.toLowerCase();
+
+      result = result.where((product) {
+        return product.tenSP.toLowerCase().contains(lowerKeyword) ||
+            (product.cpu ?? '').toLowerCase().contains(lowerKeyword) ||
+            (product.ram ?? '').toLowerCase().contains(lowerKeyword) ||
+            (product.oCung ?? '').toLowerCase().contains(lowerKeyword) ||
+            (product.vga ?? '').toLowerCase().contains(lowerKeyword) ||
+            product.giaBan.toString().contains(lowerKeyword);
+      }).toList();
     }
 
-    final lowerKeyword = _keyword.toLowerCase();
-
-    return _products.where((product) {
-      return product.tenSP.toLowerCase().contains(lowerKeyword) ||
-          (product.cpu ?? '').toLowerCase().contains(lowerKeyword) ||
-          (product.ram ?? '').toLowerCase().contains(lowerKeyword) ||
-          (product.oCung ?? '').toLowerCase().contains(lowerKeyword) ||
-          (product.vga ?? '').toLowerCase().contains(lowerKeyword);
-    }).toList();
+    return result;
   }
 
   AdminProductController() {
@@ -45,16 +48,14 @@ class AdminProductController extends ChangeNotifier {
       final data = await _client
           .from('sanpham')
           .select()
-          .order('masp', ascending: true);
+          .order('masp', ascending: false);
 
       _products
         ..clear()
         ..addAll(
-          // Supabase returns Map<dynamic, dynamic>, convert to Map<String, dynamic>
-          data
-              .map((item) => LaptopModel.fromJson(
-                  Map<String, dynamic>.from(item as Map)))
-              .toList(),
+          (data as List<dynamic>).map(
+            (item) => LaptopModel.fromJson(item as Map<String, dynamic>),
+          ),
         );
     } catch (e) {
       _errorMessage = 'Không thể tải danh sách laptop: $e';
@@ -69,7 +70,7 @@ class AdminProductController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addProduct({
+  Future<bool> addProduct({
     required String tenSP,
     required double giaBan,
     required int soLuongTon,
@@ -84,6 +85,8 @@ class AdminProductController extends ChangeNotifier {
     String? hinhAnh,
   }) async {
     try {
+      _errorMessage = null;
+
       await _client.from('sanpham').insert({
         'tensp': tenSP,
         'mahang': maHang,
@@ -101,13 +104,15 @@ class AdminProductController extends ChangeNotifier {
       });
 
       await loadProducts();
+      return true;
     } catch (e) {
       _errorMessage = 'Không thể thêm laptop: $e';
       notifyListeners();
+      return false;
     }
   }
 
-  Future<void> updateProduct({
+  Future<bool> updateProduct({
     required int maSP,
     required String tenSP,
     required double giaBan,
@@ -124,46 +129,54 @@ class AdminProductController extends ChangeNotifier {
     bool trangThai = true,
   }) async {
     try {
-      await _client.from('sanpham').update({
-        'tensp': tenSP,
-        'mahang': maHang,
-        'madm': maDM,
-        'giaban': giaBan,
-        'soluongton': soLuongTon,
-        'hinhanh': hinhAnh,
-        'cpu': cpu,
-        'ram': ram,
-        'o_cung': oCung,
-        'vga': vga,
-        'manhinh': manHinh,
-        'mota': moTa,
-        'trangthai': trangThai,
-      }).eq('masp', maSP);
+      _errorMessage = null;
+
+      await _client
+          .from('sanpham')
+          .update({
+            'tensp': tenSP,
+            'mahang': maHang,
+            'madm': maDM,
+            'giaban': giaBan,
+            'soluongton': soLuongTon,
+            'hinhanh': hinhAnh,
+            'cpu': cpu,
+            'ram': ram,
+            'o_cung': oCung,
+            'vga': vga,
+            'manhinh': manHinh,
+            'mota': moTa,
+            'trangthai': trangThai,
+          })
+          .eq('masp', maSP);
 
       await loadProducts();
+      return true;
     } catch (e) {
       _errorMessage = 'Không thể cập nhật laptop: $e';
       notifyListeners();
+      return false;
     }
   }
 
-  Future<void> deleteProduct(int maSP) async {
+  Future<bool> deleteProduct(int maSP) async {
     try {
-      await _client.from('sanpham').update({
-        'trangthai': false,
-      }).eq('masp', maSP);
+      _errorMessage = null;
+
+      // Xóa hẳn trong database
+      await _client.from('sanpham').delete().eq('masp', maSP);
 
       await loadProducts();
+      return true;
     } catch (e) {
-      _errorMessage = 'Không thể xóa laptop: $e';
+      _errorMessage =
+          'Không thể xóa laptop. Có thể sản phẩm đang được đơn hàng tham chiếu: $e';
       notifyListeners();
+      return false;
     }
   }
 
   String formatCurrency(double value) {
-    return '${value.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-          (match) => '${match[1]}.',
-        )} đ';
+    return '${value.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (match) => '${match[1]}.')} đ';
   }
 }
